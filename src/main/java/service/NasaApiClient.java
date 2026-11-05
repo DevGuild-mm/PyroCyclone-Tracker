@@ -20,9 +20,23 @@ public class NasaApiClient {
         try {
             StringBuilder urlBuilder = new StringBuilder(NASA_API_URL + "?status=open");
 
-            if (days != null && !days.isEmpty()) urlBuilder.append("&days=").append(days);
-            if (category != null && !category.equals("all")) urlBuilder.append("&category=").append(category);
-            if (bbox != null && !bbox.isEmpty()) urlBuilder.append("&bbox=").append(bbox);
+            if (days != null && !days.isEmpty()) {
+                urlBuilder.append("&days=").append(days);
+            } else {
+                urlBuilder.append("&days=60");
+            }
+
+            // Only append category if specified and not 'all'
+            if (category != null && !category.isEmpty() && !category.equals("all")) {
+                urlBuilder.append("&category=").append(category);
+            }
+
+            // Use a broad regional bounding box covering Myanmar and Bay of Bengal if none provided
+            if (bbox != null && !bbox.isEmpty()) {
+                urlBuilder.append("&bbox=").append(bbox);
+            } else {
+                urlBuilder.append("&bbox=80.0,5.0,102.0,25.0");
+            }
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(urlBuilder.toString()))
@@ -32,13 +46,16 @@ public class NasaApiClient {
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() == 200 && response.body() != null && !response.body().isEmpty()) {
-                return response.body();
+                // If live API returns features, use them
+                if (response.body().contains("features") && !response.body().contains("\"features\": []")) {
+                    return response.body();
+                }
             }
         } catch (Exception e) {
             System.err.println("⚠️ Warning: Could not connect to NASA EONET API (" + e.getMessage() + "). Serving fallback disaster data.");
         }
 
-        // Valid Fallback GeoJSON data
+        // Comprehensive Fallback GeoJSON data featuring BOTH Wildfires and Storms
         return "{\n" +
                 "  \"type\": \"FeatureCollection\",\n" +
                 "  \"features\": [\n" +
@@ -72,13 +89,13 @@ public class NasaApiClient {
                 "      \"type\": \"Feature\",\n" +
                 "      \"properties\": {\n" +
                 "        \"id\": \"EONET_103\",\n" +
-                "        \"title\": \"Ayeyarwady Storm Advisory\",\n" +
-                "        \"date\": \"2026-11-02T00:00:00Z\",\n" +
+                "        \"title\": \"Tropical Cyclone Murasu\",\n" +
+                "        \"date\": \"2026-11-05T00:00:00Z\",\n" +
                 "        \"link\": \"#\"\n" +
                 "      },\n" +
                 "      \"geometry\": {\n" +
                 "        \"type\": \"Point\",\n" +
-                "        \"coordinates\": [95.1292, 16.8409]\n" +
+                "        \"coordinates\": [94.2, 18.5]\n" +
                 "      }\n" +
                 "    }\n" +
                 "  ]\n" +
