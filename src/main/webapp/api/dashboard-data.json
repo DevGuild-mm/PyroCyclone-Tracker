@@ -1,5 +1,5 @@
 {
-  "topAlert": "🔴 High Risk: ပြင်ဦးလွင်နှင့် ကလောမြို့နယ်တို့တွင် တောမီးအလွန်အမင်း တောက်လောင်နေမှုများ ရှိနေပါသည်။",
+  "topAlert": "🔴 High Risk: Severe wildfires are currently burning in Pyin Oo Lwin and Kalaw Townships.",
   "stats": {
     "totalCases": 4,
     "activeHotspots": 3,
@@ -8,37 +8,57 @@
   },
   "emergencyAlerts": [
     {
-      "township": "ပြင်ဦးလွင်မြို့နယ်",
+      "township": "Pyin Oo Lwin Township",
       "risk": "High Risk",
-      "desc": "တောမီးအလွန်အမင်း တောက်လောင်နေပါသည်။",
+      "desc": "Severe wildfire activity is currently occurring in the area.",
       "time": "10 mins ago"
     },
     {
-      "township": "ကလောမြို့နယ်",
+      "township": "Kalaw Township",
       "risk": "Moderate",
-      "desc": "တောစပ်တစ်ဝိုက်တွင် မီးခိုးတန်းများ စတင်တွေ့ရှိရ။",
+      "desc": "Smoke plumes have begun to appear around the forest perimeter.",
       "time": "1 hour ago"
     },
     {
-      "township": "ရှမ်းပြည်နယ်တောင်ပိုင်း",
+      "township": "MyitKyina",
       "risk": "Advisory",
-      "desc": "မီးဘေးသတိပေးချက်ထုတ်ပြန်ထားသည်။",
-      "time": "3 hours ago"
-    },
-    {
-      "township": "ကချင်ပြည်နယ်",
-      "risk": "Advisory",
-      "desc": "မီးဘေးသတိပေးချက်ထုတ်ပြန်ထားသည်။",
+      "desc": "A wildfire safety advisory has been issued.",
       "time": "8 hours ago"
     }
   ],
   "chart": {
-    "labels": ["တနင်္လာ", "အင်္ဂါ", "ဗုဒ္ဓဟူး", "ကြာသပတေး", "သောကြာ", "စနေ", "တနင်္ဂနွေ"],
-    "caseCounts": [9, 7, 5, 12, 9, 40, 8]
+    "labels": [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday"
+    ],
+    "caseCounts": [1, 1, 5, 12, 9, 3, 8]
   },
   "hotspots": [
-    { "lat": 22.0152, "lng": 96.4465, "region": "ပြင်ဦးလွင်", "status": "High Risk", "radius": 35000 },
-    { "lat": 23.1167, "lng": 94.7333, "region": "ကလေး", "status": "Moderate", "radius": 25000 },
-    { "lat": 25.1167, "lng": 94.7333, "region": "ကလေးဗိုလ်", "status": "Moderate", "radius": 25000 }
+    {
+      "lat": 22.0152,
+      "lng": 96.4465,
+      "region": "Pyin Oo Lwin",
+      "status": "High Risk",
+      "radius": 35000
+    },
+    {
+      "lat": 23.1167,
+      "lng": 94.7333,
+      "region": "Kalay",
+      "status": "Moderate",
+      "radius": 25000
+    },
+    {
+      "lat": 25.3868,
+      "lng": 97.3939,
+      "region": "Myitkyina",
+      "status": "Moderate",
+      "radius": 25000
+    }
   ]
 }
