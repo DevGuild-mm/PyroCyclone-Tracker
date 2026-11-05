@@ -125,7 +125,7 @@
             <span class="badge bg-dark text-danger me-3 px-2 py-1 fw-bold"><i class="fa-solid fa-bullhorn me-1"></i> LIVE ALERTS</span>
             <div class="overflow-hidden flex-grow-1">
                 <div id="marquee-content" class="marquee-content">
-                    <span>Loading live alerts from backend...</span>
+                    <span>စုံစမ်းစစ်ဆေးနေသည်... (Loading live alerts...)</span>
                 </div>
             </div>
         </div>
@@ -219,7 +219,7 @@
             <!-- Right Column: Emergency Alerts Townships Box & Chart -->
             <div class="col-lg-4 d-flex flex-column gap-4">
 
-                <!-- မီးလောင်နေတဲ့ မြို့နယ်နာမည်များပြသည့် Box -->
+                <!-- Affected Townships & Alerts Box -->
                 <div class="modern-card p-3 flex-grow-1 d-flex flex-column">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h5 class="mb-0 text-white fw-semibold fs-6">
@@ -269,7 +269,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- Safe JS Script without JSP EL conflicts -->
+    <!-- Safe JS Script with Myanmar Localization -->
     <script>
         let fireChartInstance = null;
         let mapInstance = null;
@@ -297,30 +297,126 @@
 
             hotspotLayerGroup = L.layerGroup().addTo(mapInstance);
 
-            // ၂။ Backend API (JSON) မှ Data လှမ်းခေါ်ခြင်း
+            // ၂။ Backend API မှ Data လှမ်းခေါ်ခြင်း
             async function fetchDashboardData() {
                 try {
-                    const response = await fetch('api/dashboard-data.json');
-                    if (!response.ok) throw new Error('Failed to fetch data.');
+                    const response = await fetch('api/events?days=30');
+                    if (!response.ok) throw new Error('Failed to fetch data from proxy servlet.');
 
-                    const data = await response.json();
-
-                    updateMarqueeAlert(data.topAlert);
-                    updateStats(data.stats);
-
-                    globalEmergencyAlerts = data.emergencyAlerts || [];
-                    renderEmergencyAlerts(globalEmergencyAlerts);
-
-                    updateChart(data.chart);
-                    updateMapHotspots(data.hotspots);
+                    const geoJson = await response.json();
+                    parseEonetData(geoJson);
 
                 } catch (error) {
                     console.error("Error loading dashboard data:", error);
                     document.getElementById('marquee-content').innerHTML = "<span>⚠️ Error: Unable to connect to backend data.</span>";
+                    document.getElementById('emergency-alerts-container').innerHTML = '<p class="text-danger small text-center py-3">Failed to load live events.</p>';
                 }
             }
 
-            // ၃။ Marquee Top Alert Update (String Concatenation သုံးထားသည်)
+            function extractCoordinates(geometry) {
+                if (!geometry || !geometry.coordinates) return [95.9560, 21.9162];
+                let coords = geometry.coordinates;
+                while (Array.isArray(coords) && coords.length > 0 && Array.isArray(coords[0])) {
+                    coords = coords[0];
+                }
+                if (Array.isArray(coords) && coords.length >= 2) {
+                    return [Number(coords[0]) || 95.9560, Number(coords[1]) || 21.9162];
+                }
+                return [95.9560, 21.9162];
+            }
+
+            // ၃။ Parse Data and apply Myanmar text styling
+            function parseEonetData(geoJson) {
+                const features = geoJson.features || [];
+
+                let totalCases = features.length;
+                let activeHotspots = 0;
+                let emergencyAlerts = [];
+                let hotspots = [];
+                let chartLabels = [];
+                let chartCounts = [];
+                let dateMap = {};
+
+                features.forEach((feature) => {
+                    try {
+                        const props = feature.properties || {};
+                        const [lng, lat] = extractCoordinates(feature.geometry);
+
+                        const title = props.title || "Disaster Event";
+                        const eventDate = props.date ? props.date.substring(0, 10) : "Recent";
+
+                        activeHotspots++;
+
+                        // Determine Risk & Myanmar description
+                        let risk = "Advisory";
+                        let myanmarDesc = "မီးဘေးသတိပေးချက်ထုတ်ပြန်ထားသည်။";
+                        let regionName = title;
+
+                        const lowerTitle = title.toLowerCase();
+                        if (lowerTitle.includes('severe') || lowerTitle.includes('cyclone') || lowerTitle.includes('fire') || lowerTitle.includes('storm')) {
+                            risk = "High Risk";
+                            myanmarDesc = "မီးတောသတိပေးချက်ထုတ်ပြန်ထားသည်။ မီးဘေးအန္တရာယ် သတိပြုပါ။";
+                        } else if (lowerTitle.includes('flood') || lowerTitle.includes('volcano')) {
+                            risk = "Moderate";
+                            myanmarDesc = "သဘာဝဘေးအန္တရာယ် သတိပြုရန်။";
+                        }
+
+                        emergencyAlerts.push({
+                            risk: risk,
+                            township: regionName,
+                            time: eventDate,
+                            desc: myanmarDesc
+                        });
+
+                        hotspots.push({
+                            lat: lat,
+                            lng: lng,
+                            radius: 15000,
+                            region: regionName,
+                            status: risk
+                        });
+
+                        dateMap[eventDate] = (dateMap[eventDate] || 0) + 1;
+                    } catch (err) {
+                        console.warn("Skipping feature:", err);
+                    }
+                });
+
+                const sortedDates = Object.keys(dateMap).sort();
+                sortedDates.forEach(d => {
+                    chartLabels.push(d);
+                    chartCounts.push(dateMap[d]);
+                });
+
+                if (sortedDates.length === 0) {
+                    chartLabels = ["No Data"];
+                    chartCounts = [0];
+                }
+
+                // Top marquee alert in Myanmar
+                const topAlertText = totalCases > 0
+                    ? "စိုးရိမ်စရာ မီးဘေးနှင့် သဘာဝဘေးအန္တရာယ် " + totalCases + " ခု စတင်တွေ့ရှိရပါသည်။"
+                    : "လက်ရှိတွင် သဘာဝဘေး အရေးပေါ်သတိပေးချက် မရှိပါ။";
+
+                updateMarqueeAlert(topAlertText);
+                updateStats({
+                    totalCases: totalCases,
+                    activeHotspots: activeHotspots,
+                    burnedAcres: (totalCases * 425).toLocaleString(),
+                    highRiskTownships: emergencyAlerts.filter(a => a.risk === 'High Risk').length
+                });
+
+                globalEmergencyAlerts = emergencyAlerts;
+                renderEmergencyAlerts(globalEmergencyAlerts);
+
+                updateChart({
+                    labels: chartLabels,
+                    caseCounts: chartCounts
+                });
+
+                updateMapHotspots(hotspots);
+            }
+
             function updateMarqueeAlert(alertText) {
                 const marqueeEl = document.getElementById('marquee-content');
                 if (alertText) {
@@ -330,16 +426,14 @@
                 }
             }
 
-            // ၄။ Stats Cards Update
             function updateStats(stats) {
                 if (!stats) return;
                 document.getElementById('stat-total-cases').innerText = stats.totalCases ?? 0;
                 document.getElementById('stat-active-hotspots').innerText = stats.activeHotspots ?? 0;
                 document.getElementById('stat-burned-acres').innerText = stats.burnedAcres ?? 0;
-                document.getElementById('stat-high-risk').innerText = (stats.highRiskTownships ?? 0) + " Townships";
+                document.getElementById('stat-high-risk').innerText = (stats.highRiskTownships ?? 0) + " Regions";
             }
 
-            // ၅။ Emergency Alerts Box (String Concatenation ဖြင့် Safe ပြုလုပ်ထားသည်)
             function renderEmergencyAlerts(alertsList) {
                 const container = document.getElementById('emergency-alerts-container');
                 const badge = document.getElementById('alert-count-badge');
@@ -376,7 +470,6 @@
                 container.innerHTML = htmlContent;
             }
 
-            // ၆။ Filter Logic
             function applyFilters() {
                 const selectedRisk = document.getElementById('filter-risk').value;
                 const dateQuery = document.getElementById('filter-date').value.toLowerCase().trim();
@@ -393,7 +486,6 @@
             document.getElementById('filter-risk').addEventListener('change', applyFilters);
             document.getElementById('filter-date').addEventListener('input', applyFilters);
 
-            // ၇။ Chart.js Update
             function updateChart(chartData) {
                 if (!chartData) return;
                 const ctx = document.getElementById('fireChart').getContext('2d');
@@ -426,7 +518,6 @@
                 });
             }
 
-            // ၈။ Map Hotspots
             function updateMapHotspots(hotspots) {
                 if (!hotspots) return;
                 hotspotLayerGroup.clearLayers();
@@ -447,12 +538,11 @@
                     });
 
                     L.marker([spot.lat, spot.lng], { icon: fireIcon })
-                      .bindPopup('<b>' + spot.region + '</b><br>Status: ' + spot.status)
+                      .bindPopup('<b>' + spot.region + '</b><br>အခြေအနေ: ' + spot.status)
                       .addTo(hotspotLayerGroup);
                 });
             }
 
-            // ခေါ်ယူခြင်း
             fetchDashboardData();
         });
     </script>
