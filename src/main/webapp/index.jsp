@@ -145,14 +145,9 @@
                     <span class="pulse-dot"></span> LIVE MONITOR
                 </div>
                 <div class="dropdown">
-                    <button class="btn btn-outline-light btn-sm dropdown-toggle rounded-pill px-3" type="button" data-bs-toggle="dropdown">
-                        <i class="fa-solid fa-globe me-1"></i> မြန်မာနိုင်ငံ
+                    <button class="btn btn-outline-light btn-sm  rounded-pill px-3" type="button" data-bs-toggle="dropdown">
+                        <i class="fa-solid fa-globe me-1"></i> Myanmar
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-dark shadow">
-                        <li><a class="dropdown-item" href="#">တစ်နိုင်ငံလုံး</a></li>
-                        <li><a class="dropdown-item" href="#">ရှမ်းပြည်နယ်</a></li>
-                        <li><a class="dropdown-item" href="#">စစ်ကိုင်းတိုင်း</a></li>
-                    </ul>
                 </div>
             </div>
         </div>
@@ -219,7 +214,7 @@
             <!-- Right Column: Emergency Alerts Townships Box & Chart -->
             <div class="col-lg-4 d-flex flex-column gap-4">
 
-                <!-- မီးလောင်နေတဲ့ မြို့နယ်နာမည်များပြသည့် Box -->
+
                 <div class="modern-card p-3 flex-grow-1 d-flex flex-column">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <h5 class="mb-0 text-white fw-semibold fs-6">
@@ -277,7 +272,7 @@
         let globalEmergencyAlerts = [];
 
         document.addEventListener("DOMContentLoaded", function () {
-            // ၁။ Leaflet Map စတင်တည်ဆောက်ခြင်း
+
             const googleRoadmapLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
                 maxZoom: 20,
                 subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
@@ -297,7 +292,6 @@
 
             hotspotLayerGroup = L.layerGroup().addTo(mapInstance);
 
-            // ၂။ Backend API (JSON) မှ Data လှမ်းခေါ်ခြင်း
             async function fetchDashboardData() {
                 try {
                     const response = await fetch('api/dashboard-data.json');
@@ -320,7 +314,7 @@
                 }
             }
 
-            // ၃။ Marquee Top Alert Update (String Concatenation သုံးထားသည်)
+
             function updateMarqueeAlert(alertText) {
                 const marqueeEl = document.getElementById('marquee-content');
                 if (alertText) {
@@ -330,7 +324,6 @@
                 }
             }
 
-            // ၄။ Stats Cards Update
             function updateStats(stats) {
                 if (!stats) return;
                 document.getElementById('stat-total-cases').innerText = stats.totalCases ?? 0;
@@ -339,7 +332,7 @@
                 document.getElementById('stat-high-risk').innerText = (stats.highRiskTownships ?? 0) + " Townships";
             }
 
-            // ၅။ Emergency Alerts Box (String Concatenation ဖြင့် Safe ပြုလုပ်ထားသည်)
+
             function renderEmergencyAlerts(alertsList) {
                 const container = document.getElementById('emergency-alerts-container');
                 const badge = document.getElementById('alert-count-badge');
@@ -376,7 +369,7 @@
                 container.innerHTML = htmlContent;
             }
 
-            // ၆။ Filter Logic
+
             function applyFilters() {
                 const selectedRisk = document.getElementById('filter-risk').value;
                 const dateQuery = document.getElementById('filter-date').value.toLowerCase().trim();
@@ -393,7 +386,7 @@
             document.getElementById('filter-risk').addEventListener('change', applyFilters);
             document.getElementById('filter-date').addEventListener('input', applyFilters);
 
-            // ၇။ Chart.js Update
+
             function updateChart(chartData) {
                 if (!chartData) return;
                 const ctx = document.getElementById('fireChart').getContext('2d');
@@ -426,7 +419,7 @@
                 });
             }
 
-            // ၈။ Map Hotspots
+
             function updateMapHotspots(hotspots) {
                 if (!hotspots) return;
                 hotspotLayerGroup.clearLayers();
@@ -452,7 +445,7 @@
                 });
             }
 
-            // ခေါ်ယူခြင်း
+
             fetchDashboardData();
         });
     </script>
