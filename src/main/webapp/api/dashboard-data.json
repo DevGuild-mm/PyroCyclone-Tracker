@@ -1,0 +1,44 @@
+{
+  "topAlert": "🔴 High Risk: ပြင်ဦးလွင်နှင့် ကလောမြို့နယ်တို့တွင် တောမီးအလွန်အမင်း တောက်လောင်နေမှုများ ရှိနေပါသည်။",
+  "stats": {
+    "totalCases": 4,
+    "activeHotspots": 3,
+    "burnedAcres": 850,
+    "highRiskTownships": 2
+  },
+  "emergencyAlerts": [
+    {
+      "township": "ပြင်ဦးလွင်မြို့နယ်",
+      "risk": "High Risk",
+      "desc": "တောမီးအလွန်အမင်း တောက်လောင်နေပါသည်။",
+      "time": "10 mins ago"
+    },
+    {
+      "township": "ကလောမြို့နယ်",
+      "risk": "Moderate",
+      "desc": "တောစပ်တစ်ဝိုက်တွင် မီးခိုးတန်းများ စတင်တွေ့ရှိရ။",
+      "time": "1 hour ago"
+    },
+    {
+      "township": "ရှမ်းပြည်နယ်တောင်ပိုင်း",
+      "risk": "Advisory",
+      "desc": "မီးဘေးသတိပေးချက်ထုတ်ပြန်ထားသည်။",
+      "time": "3 hours ago"
+    },
+    {
+      "township": "ကချင်ပြည်နယ်",
+      "risk": "Advisory",
+      "desc": "မီးဘေးသတိပေးချက်ထုတ်ပြန်ထားသည်။",
+      "time": "8 hours ago"
+    }
+  ],
+  "chart": {
+    "labels": ["တနင်္လာ", "အင်္ဂါ", "ဗုဒ္ဓဟူး", "ကြာသပတေး", "သောကြာ", "စနေ", "တနင်္ဂနွေ"],
+    "caseCounts": [9, 7, 5, 12, 9, 40, 8]
+  },
+  "hotspots": [
+    { "lat": 22.0152, "lng": 96.4465, "region": "ပြင်ဦးလွင်", "status": "High Risk", "radius": 35000 },
+    { "lat": 23.1167, "lng": 94.7333, "region": "ကလေး", "status": "Moderate", "radius": 25000 },
+    { "lat": 25.1167, "lng": 94.7333, "region": "ကလေးဗိုလ်", "status": "Moderate", "radius": 25000 }
+  ]
+}
