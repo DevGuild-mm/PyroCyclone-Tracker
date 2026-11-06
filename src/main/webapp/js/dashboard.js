@@ -22,15 +22,11 @@ document.addEventListener("DOMContentLoaded", function () {
         attribution: '&copy; Google Maps'
     });
 
-    const myanmarBounds = L.latLngBounds([9.0, 91.5], [28.8, 101.5]);
-
     mapInstance = L.map('map', {
-        center: [21.9162, 95.9560],
-        zoom: 6,
+        center: [20, 0],
+        zoom: 2,
         layers: [googleRoadmapLayer],
-        maxBounds: myanmarBounds,
-        maxBoundsViscosity: 1.0,
-        minZoom: 5
+        minZoom: 2
     });
 
     hotspotLayerGroup = L.layerGroup().addTo(mapInstance);
@@ -143,7 +139,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     body: requestJson
                 });
 
-                // 1. Redirect to Login Page if session expires
                 if (response.status === 401) {
                     alert("⚠️ Session has expired or you are not logged in. Please login first.");
                     window.location.href = 'login.jsp';
@@ -152,17 +147,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 const responseText = await response.text();
                 let responseData = null;
-
-                // 2. Check whether the response text is JSON (to avoid HTML error pages)
                 try {
                     responseData = JSON.parse(responseText);
                 } catch (e) {
-                    responseData = null; // Not JSON, it is HTML
+                    responseData = null;
                 }
 
                 if (!response.ok) {
                     let errorMessage = 'Server Error (' + response.status + ')';
-
                     if (response.status === 404) {
                         errorMessage = 'API endpoint not found';
                     } else if (response.status === 500) {
@@ -170,7 +162,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     } else if (responseData && responseData.message) {
                         errorMessage = responseData.message;
                     }
-
                     throw new Error(errorMessage);
                 }
 
@@ -240,6 +231,7 @@ function parseEonetData(geoJson) {
     let totalCases = features.length;
     let wildfireCount = 0;
     let stormCount = 0;
+    let totalBurnedAcres = 0;
     let emergencyAlerts = [];
     let hotspots = [];
     let chartLabels = [];
@@ -255,18 +247,50 @@ function parseEonetData(geoJson) {
             const title = props.title || "Disaster Event";
             const eventDate = props.date ? props.date.substring(0, 10) : "Recent";
             const lowerTitle = title.toLowerCase();
+            const categories = props.categories || [];
 
-            let isStorm = lowerTitle.includes('cyclone') || lowerTitle.includes('storm') || lowerTitle.includes('typhoon');
-            if (isStorm) stormCount++; else wildfireCount++;
+            let isWildfire = false;
+            let isStorm = false;
+
+            categories.forEach(cat => {
+                let catId = (typeof cat === 'string' ? cat : (cat.id || '')).toLowerCase();
+                if (catId.includes('wildfire')) isWildfire = true;
+                if (catId.includes('storm') || catId.includes('severe')) isStorm = true;
+            });
+
+            if (!isWildfire && !isStorm) {
+                if (lowerTitle.includes('wildfire') || lowerTitle.includes('fire') || lowerTitle.includes('prescribed')) {
+                    isWildfire = true;
+                } else if (lowerTitle.includes('cyclone') || lowerTitle.includes('storm') || lowerTitle.includes('typhoon')) {
+                    isStorm = true;
+                } else {
+                    isWildfire = true;
+                }
+            }
+
+            if (isStorm && !isWildfire) {
+                stormCount++;
+            } else {
+                wildfireCount++;
+                if (props.magnitudeValue) {
+                    totalBurnedAcres += Number(props.magnitudeValue);
+                } else {
+                    totalBurnedAcres += 500;
+                }
+            }
 
             let risk = "High Risk";
-            let englishDesc = isStorm
+            let englishDesc = (isStorm && !isWildfire)
                 ? "Storm / Cyclone hazard alert issued."
-                : "Wildfire hazard warning. Fire alert issued.";
-            let iconSymbol = isStorm ? "🌀" : "🔥";
+                : "Wildfire hazard warning / Active fire alert issued.";
+            let iconSymbol = (isStorm && !isWildfire) ? "🌀" : "🔥";
 
-            emergencyAlerts.push({ risk: risk, township: title, time: eventDate, desc: englishDesc, isStorm: isStorm });
-            hotspots.push({ lat: lat, lng: lng, radius: isStorm ? 30000 : 15000, region: title, status: risk, iconSymbol: iconSymbol });
+            emergencyAlerts.push({ risk: risk, township: title, time: eventDate, desc: englishDesc, isStorm: (isStorm && !isWildfire) });
+
+            let magnitude = props.magnitudeValue || 1000;
+            let radiusSize = Math.max(5000, magnitude * 15);
+
+            hotspots.push({ lat: lat, lng: lng, radius: radiusSize, region: title, status: risk, iconSymbol: iconSymbol });
             dateMap[eventDate] = (dateMap[eventDate] || 0) + 1;
         } catch (err) {
             console.warn("Skipping feature:", err);
@@ -291,7 +315,7 @@ function parseEonetData(geoJson) {
     if (activeElem) activeElem.innerText = wildfireCount;
 
     const burnedElem = document.getElementById('stat-burned-acres');
-    if (burnedElem) burnedElem.innerText = (wildfireCount * 1250).toLocaleString();
+    if (burnedElem) burnedElem.innerText = totalBurnedAcres.toLocaleString();
 
     const highRiskElem = document.getElementById('stat-high-risk');
     if (highRiskElem) highRiskElem.innerText = stormCount + " Storms";
@@ -301,6 +325,7 @@ function parseEonetData(geoJson) {
 
     updateChart({ labels: chartLabels, caseCounts: chartCounts });
     updateMapHotspots(hotspots);
+    checkUserProximity(hotspots);
 }
 
 function updateMarqueeAlert(alertText) {
@@ -387,30 +412,167 @@ function updateChart(chartData) {
 }
 
 function updateMapHotspots(hotspots) {
-    if (!hotspots || !hotspotLayerGroup) return;
+    if (!hotspots || !hotspotLayerGroup || !mapInstance) return;
     hotspotLayerGroup.clearLayers();
 
+    let bounds = [];
+
     hotspots.forEach(spot => {
-        let circleColor = spot.iconSymbol === '🌀' ? '#06b6d4' : '#ef4444';
+        if (typeof spot.lat !== 'number' || typeof spot.lng !== 'number' || isNaN(spot.lat) || isNaN(spot.lng)) return;
 
-        L.circle([spot.lat, spot.lng], {
-            radius: spot.radius,
-            color: circleColor,
-            fillColor: circleColor,
-            fillOpacity: 0.2,
-            weight: 1.5
-        }).addTo(hotspotLayerGroup);
+        let isStorm = spot.iconSymbol === '🌀';
 
-        const customIcon = L.divIcon({
-            className: '',
-            html: '<div style="font-size: 20px; filter: drop-shadow(0 0 6px rgba(0,0,0,0.8));">' + spot.iconSymbol + '</div>',
-            iconSize: [24, 24]
-        });
+        if (isStorm) {
+            const stormIcon = L.divIcon({
+                className: '',
+                html: '<div style="font-size: 9px; filter: drop-shadow(0 0 6px rgba(0,0,0,0.8));">🌀</div>',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            });
 
-        let hazardTypeText = spot.iconSymbol === '🌀' ? 'Storm' : 'Wildfire';
+            L.circle([spot.lat, spot.lng], {
+                radius: spot.radius || 30000,
+                color: '#06b6d4',
+                fillColor: '#06b6d4',
+                fillOpacity: 0.2,
+                weight: 1.5
+            }).addTo(hotspotLayerGroup);
 
-        L.marker([spot.lat, spot.lng], { icon: customIcon })
-            .bindPopup('<b>' + spot.region + '</b><br>Category: ' + hazardTypeText)
-            .addTo(hotspotLayerGroup);
+            L.marker([spot.lat, spot.lng], { icon: stormIcon })
+                .bindPopup('<b>' + spot.region + '</b><br>Category: Storm')
+                .addTo(hotspotLayerGroup);
+        } else {
+            let thermalColor = '#ef4444';
+
+            L.circle([spot.lat, spot.lng], {
+                radius: spot.radius || 12000,
+                color: thermalColor,
+                fillColor: thermalColor,
+                fillOpacity: 0.2,
+                weight: 1
+            }).addTo(hotspotLayerGroup);
+
+            const smallSpotIcon = L.divIcon({
+                className: 'wildfire-small-spot',
+                html: `
+                    <div style="
+                        width: 5px;
+                        height: 5px;
+                        background: ${thermalColor};
+                        border: 2px solid #ffffff;
+                        border-radius: 50%;
+                        box-shadow: 0 0 6px rgba(239, 68, 68, 0.8);
+                    </div>
+                `,
+                iconSize: [10, 10],
+                iconAnchor: [5, 5]
+            });
+
+            L.marker([spot.lat, spot.lng], { icon: smallSpotIcon })
+                .bindPopup('<b>' + spot.region + '</b><br>Category: Wildfire')
+                .addTo(hotspotLayerGroup);
+        }
+
+        bounds.push([spot.lat, spot.lng]);
     });
+
+    if (bounds.length > 0) {
+        mapInstance.fitBounds(bounds, { padding: [30, 30], maxZoom: 5 });
+    }
+}
+
+function checkUserProximity(hotspots) {
+    if (!navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const userLat = position.coords.latitude;
+            const userLng = position.coords.longitude;
+
+            let dangerThresholdKm = 100;
+            let nearestIncident = null;
+
+            hotspots.forEach(spot => {
+                let distance = calculateDistance(userLat, userLng, spot.lat, spot.lng);
+                if (distance <= dangerThresholdKm) {
+                    if (!nearestIncident || distance < nearestIncident.distance) {
+                        nearestIncident = { ...spot, distance: distance };
+                    }
+                }
+            });
+
+            if (nearestIncident) {
+                showDangerAlertScreen(nearestIncident);
+            }
+        },
+        (error) => {
+            console.warn("User location permission denied or unavailable:", error);
+        },
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+    );
+}
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
+
+function showDangerAlertScreen(incident) {
+    if (document.getElementById('dangerAlertOverlay')) return;
+
+    const alertHtml = `
+        <div id="dangerAlertOverlay" style="
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(8px);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        ">
+            <div style="
+                background: #1e1b4b;
+                border: 2px solid #ef4444;
+                border-radius: 16px;
+                padding: 30px;
+                max-width: 450px;
+                width: 90%;
+                text-align: center;
+                box-shadow: 0 0 30px rgba(239, 68, 68, 0.6);
+            ">
+                <div style="font-size: 50px; margin-bottom: 15px;">⚠️</div>
+                <h3 style="color: #ef4444; font-weight: bold; margin-bottom: 10px;">DANGER ZONE ALERT!</h3>
+                <p style="color: #cbd5e1; font-size: 14px; margin-bottom: 20px;">
+                    Warning! Your current location is within an active hazard zone (<span style="color: #f87171; font-weight: bold;">${incident.region}</span>) at approximately <span style="color: #f87171; font-weight: bold;">${incident.distance.toFixed(1)} km</span> distance.
+                </p>
+                <div style="background: rgba(239, 68, 68, 0.1); border-left: 4px solid #ef4444; padding: 10px; text-align: left; margin-bottom: 20px; font-size: 12px; color: #fca5a5;">
+                    <b>Hazard Type:</b> ${incident.iconSymbol === '🌀' ? 'Severe Storm / Cyclone' : 'Active Wildfire Hotspot'}<br>
+                    <b>Status:</b> Immediate Caution Advised
+                </div>
+                <button onclick="document.getElementById('dangerAlertOverlay').remove();" style="
+                    background: #ef4444;
+                    color: white;
+                    border: none;
+                    padding: 10px 25px;
+                    font-weight: bold;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+                ">I Understand (Dismiss)</button>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', alertHtml);
 }
