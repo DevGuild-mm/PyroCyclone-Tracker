@@ -9,11 +9,18 @@ public class DbConnection {
 
     public static Connection openConnection() {
         try {
-            Class.forName("com.mysql.jdbc.Driver");
-            connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/PyroCyclone", "root", "Root@123456!");
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (SQLException e) {
+            // mysql-connector-j 8.3.0 uses com.mysql.cj.jdbc.Driver
+            try {
+                Class.forName("com.mysql.cj.jdbc.Driver");
+            } catch (ClassNotFoundException e) {
+                Class.forName("com.mysql.jdbc.Driver");
+            }
+            connection = DriverManager.getConnection(
+                    "jdbc:mysql://localhost:3306/PyroCyclone?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
+                    "root",
+                    "Root@123456!"
+            );
+        } catch (ClassNotFoundException | SQLException e) {
             e.printStackTrace();
         }
         return connection;

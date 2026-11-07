@@ -1,12 +1,21 @@
 package dao;
 
+import model.Bookmark;
 import util.DbConnection;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class BookmarkDao {
+
+    // Overloaded: Accepts Bookmark model object
+    public String addBookmark(Bookmark bookmark) {
+        return addBookmark(bookmark.getUserId(), bookmark.getEventId());
+    }
 
     // Returns: "SUCCESS", "EXISTS", or "ERROR"
     public String addBookmark(int userId, String eventId) {
@@ -34,8 +43,32 @@ public class BookmarkDao {
             }
 
         } catch (SQLException e) {
-            e.printStackTrace(); // Logs the exact error (e.g., Foreign Key violation) in your terminal
+            e.printStackTrace();
             return "ERROR";
         }
+    }
+
+    // Fetches all Bookmark models for a specific user
+    public List<Bookmark> getBookmarksByUserId(int userId) {
+        List<Bookmark> bookmarks = new ArrayList<>();
+        String query = "SELECT user_id, event_id, saved_at FROM user_bookmarks WHERE user_id = ? ORDER BY saved_at DESC";
+
+        try (Connection conn = DbConnection.openConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, userId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Bookmark bookmark = new Bookmark(
+                            rs.getInt("user_id"),
+                            rs.getString("event_id"),
+                            rs.getTimestamp("saved_at")
+                    );
+                    bookmarks.add(bookmark);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return bookmarks;
     }
 }

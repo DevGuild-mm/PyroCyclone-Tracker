@@ -4,6 +4,7 @@
     User sessionUser = (User) session.getAttribute("currentUser");
     boolean loggedIn = (sessionUser != null);
     String username = loggedIn ? sessionUser.getUsername() : "";
+    boolean isAdmin = loggedIn && "admin".equalsIgnoreCase(sessionUser.getRole());
 %>
 <!DOCTYPE html>
 <html lang="en">
@@ -19,146 +20,356 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <!-- FontAwesome Icons CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts - Inter & Padauk -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Padauk:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts - Inter, JetBrains Mono & Padauk -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Padauk:wght@400;700&display=swap" rel="stylesheet">
 
-    <!-- Internal CSS Stylesheet -->
+    <!-- Unified Command Center Stylesheet -->
     <style>
         :root {
             --bg-main: #07090e;
-            --card-bg: rgba(15, 23, 42, 0.75);
-            --border-color: rgba(255, 255, 255, 0.08);
+            --nav-bg: #0c1220;
+            --card-bg: rgba(15, 23, 42, 0.90);
+            --border-dim: rgba(255, 255, 255, 0.12);
             --accent-orange: #f97316;
             --accent-blue: #06b6d4;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --text-main: #ffffff;
+            --text-sub: #cbd5e1;
+            --text-muted: #94a3b8;
         }
 
         body {
             background-color: var(--bg-main);
             background-image:
-                radial-gradient(ellipse at 15% 10%, rgba(249,115,22,.1), transparent 45%),
-                radial-gradient(ellipse at 85% 85%, rgba(6,182,212,.06), transparent 40%);
+                radial-gradient(ellipse at 15% 10%, rgba(249, 115, 22, 0.14), transparent 45%),
+                radial-gradient(ellipse at 85% 85%, rgba(6, 182, 212, 0.09), transparent 40%);
             font-family: 'Inter', 'Padauk', sans-serif;
-            color: #f8fafc;
+            color: var(--text-main);
             min-height: 100vh;
         }
 
-        .sticky-marquee-banner {
-            position: sticky;
-            top: 0;
-            z-index: 1050;
-            background: linear-gradient(90deg, #991b1b 0%, #7f1d1d 100%);
-            color: #fff;
-            padding: 8px 0;
-            font-size: 13px;
-            font-weight: 500;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .marquee-content {
-            display: inline-block;
-            white-space: nowrap;
-            animation: marquee 35s linear infinite;
-        }
-        @keyframes marquee {
-            0% { transform: translateX(100%); }
-            100% { transform: translateX(-100%); }
+        /* 1. Unified Navigation Bar */
+        .navbar-command {
+            background-color: var(--nav-bg);
+            border-bottom: 1px solid var(--border-dim);
+            padding: 10px 24px;
         }
 
-        .modern-card {
-            background: var(--card-bg);
-            backdrop-filter: blur(16px);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            transition: transform 0.2s ease, border-color 0.2s ease;
+        .brand-logo-box {
+            width: 38px;
+            height: 38px;
+            background: rgba(249, 115, 22, 0.15);
+            border: 1px solid rgba(249, 115, 22, 0.4);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-orange);
+            font-size: 18px;
         }
-        .modern-card:hover {
-            transform: translateY(-2px);
-            border-color: rgba(249, 115, 22, 0.3);
+
+        .nav-switch-link {
+            color: var(--text-sub);
+            text-decoration: none;
+            font-size: 13.5px;
+            font-weight: 600;
+            padding: 7px 16px;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .nav-switch-link:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-switch-link.active {
+            color: var(--accent-orange);
+            background: rgba(249, 115, 22, 0.15);
+            border-color: rgba(249, 115, 22, 0.35);
+            font-weight: 700;
         }
 
         .pulse-badge {
             display: inline-flex;
             align-items: center;
-            padding: 4px 12px;
-            background: rgba(239, 68, 68, 0.12);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #ef4444;
+            padding: 5px 12px;
+            background: rgba(239, 68, 68, 0.18);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
             border-radius: 50px;
-            font-weight: 600;
+            font-weight: 700;
             font-size: 11px;
+            letter-spacing: 0.5px;
         }
+
         .pulse-dot {
-            width: 6px; height: 6px;
+            width: 7px;
+            height: 7px;
             background-color: #ef4444;
             border-radius: 50%;
-            margin-right: 6px;
-            box-shadow: 0 0 8px #ef4444;
+            margin-right: 7px;
+            box-shadow: 0 0 10px #ef4444;
             animation: pulse-animation 2s infinite;
         }
+
         @keyframes pulse-animation {
             0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
             70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
 
-        #map {
-            height: 480px;
+        .user-identity-box {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-dim);
+            border-radius: 30px;
+            padding: 4px 14px 4px 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+
+        .role-badge {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 7px;
             border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .role-admin { background: #0284c7; color: #ffffff; }
+        .role-user { background: #334155; color: #e2e8f0; }
+
+        /* 2. Moving Alert Marquee Bar (UNDER NAVBAR) */
+        .subnav-marquee-banner {
+            background: linear-gradient(90deg, #18090b 0%, #2d0d0f 50%, #18090b 100%);
+            border-bottom: 1px solid rgba(239, 68, 68, 0.35);
+            padding: 7px 0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .marquee-tag {
+            background: #991b1b;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 10px;
+            border-radius: 6px;
+            margin-right: 14px;
+            white-space: nowrap;
+            letter-spacing: 0.5px;
+        }
+
+        .marquee-content {
+            display: inline-block;
+            white-space: nowrap;
+            animation: marquee 35s linear infinite;
+        }
+
+        @keyframes marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+
+        /* 3. Cards & HUD Components */
+        .modern-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(18px);
+            border: 1px solid var(--border-dim);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .modern-card:hover {
+            border-color: rgba(249, 115, 22, 0.35);
+        }
+
+        .card-stat-label {
+            font-size: 11.5px;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .card-stat-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 28px;
+            font-weight: 700;
+            line-height: 1.1;
+        }
+
+        #map {
+            height: 490px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: crosshair;
+        }
+
+        .alert-item {
+            padding: 12px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-left: 4px solid var(--accent-red);
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .alert-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(3px);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .alert-item.info { border-left-color: var(--accent-blue); }
+        .alert-item.success { border-left-color: var(--accent-green); }
+
+        .region-jump-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: var(--text-sub);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 20px;
+            transition: all 0.2s;
+        }
+
+        .region-jump-btn:hover {
+            background: var(--accent-orange);
+            color: #07090e;
+            border-color: var(--accent-orange);
+        }
+
+        .modal-content.dark-modal {
+            background-color: #0c1222;
+            color: #ffffff;
+            border: 1px solid rgba(249, 115, 22, 0.4);
+            border-radius: 18px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85);
+        }
+
+        .dark-modal .form-label {
+            color: #cbd5e1;
+            font-weight: 700;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .dark-modal .form-control, .dark-modal .form-select {
+            background-color: #080c16 !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(255, 255, 255, 0.18) !important;
+            font-size: 13.5px;
+        }
+
+        .dark-modal .form-control:focus, .dark-modal .form-select:focus {
+            border-color: var(--accent-orange) !important;
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.25) !important;
+        }
+
+        select option {
+            background-color: #0f172a !important;
+            color: #ffffff !important;
         }
 
         ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 10px; }
     </style>
 </head>
 
 <body>
 
-    <!-- Pass Session Status to JS -->
     <script>
         const isLoggedIn = <%= loggedIn %>;
+        const currentUsername = "<%= username %>";
     </script>
 
-    <!-- 1. Sticky Marquee Banner -->
-    <div class="sticky-marquee-banner shadow-sm">
-        <div class="container-fluid d-flex align-items-center">
-            <span class="badge bg-dark text-danger me-3 px-2 py-1 fw-bold"><i class="fa-solid fa-bullhorn me-1"></i>
-                LIVE ALERTS</span>
-            <div class="overflow-hidden flex-grow-1">
-                <div id="marquee-content" class="marquee-content">
-                    <span>မြန်မာနိုင်ငံ သဘာဝဘေး အချက်အလက်များကို ရှာဖွေနေသည်... (Loading live alerts...)</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 2. Navbar -->
-    <nav class="navbar navbar-dark bg-dark px-4 py-2 border-bottom border-secondary border-opacity-25">
-        <div class="container-fluid">
-            <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="#">
-                <span class="p-2 rounded-3 text-warning" style="background: rgba(249, 115, 22, 0.15);">
+    <!-- 1. TOP UNIFIED NAVIGATION BAR -->
+    <nav class="navbar navbar-command sticky-top shadow-sm">
+        <div class="container-fluid px-0">
+            <!-- Brand -->
+            <a class="navbar-brand d-flex align-items-center gap-2.5 text-white fw-bold me-4" href="index.jsp">
+                <div class="brand-logo-box">
                     <i class="fa-solid fa-fire-flame-curved"></i>
-                </span>
-                <span>Myanmar Wildfire & Cyclone Command</span>
+                </div>
+                <div>
+                    <div style="line-height: 1.1; font-size: 15px; letter-spacing: 0.3px;">MYANMAR DISASTER COMMAND</div>
+                    <small class="text-warning fw-semibold" style="font-size: 10.5px;">Wildfire & Cyclone Early Warning</small>
+                </div>
             </a>
-            <div class="d-flex align-items-center gap-3">
+
+            <!-- Page Navigation Tabs -->
+            <div class="d-none d-md-flex align-items-center gap-2 me-auto">
+                <a href="index.jsp" class="nav-switch-link active">
+                    <i class="fa-solid fa-map-location-dot me-1.5"></i> Live Map
+                </a>
+                <% if (isAdmin) { %>
+                    <a href="admin.jsp" class="nav-switch-link">
+                        <i class="fa-solid fa-shield-halved me-1.5"></i> Moderation Console
+                    </a>
+                <% } %>
+            </div>
+
+            <!-- Right Controls -->
+            <div class="d-flex align-items-center gap-2.5">
+                <!-- Report Hazard Button -->
+                <button type="button" class="btn btn-warning btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-sm d-flex align-items-center gap-1.5" onclick="openReportModal()">
+                    <i class="fa-solid fa-bullhorn"></i>
+                    <span>သတင်းပို့မည် (Report)</span>
+                </button>
+
+                <!-- Live Status Indicator -->
                 <div class="pulse-badge">
-                    <span class="pulse-dot"></span> LIVE MONITOR
+                    <span class="pulse-dot"></span>
+                    <span class="d-none d-sm-inline">LIVE SENSORS</span>
                 </div>
 
+                <!-- User Session Identity -->
                 <% if (loggedIn) { %>
-                    <span class="text-warning small fw-semibold">👤 <%= username %></span>
-                    <a href="logout" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1 fw-semibold shadow-none">
+                    <div class="user-identity-box">
+                        <i class="fa-solid <%= isAdmin ? "fa-user-shield text-info" : "fa-user text-warning" %> ms-1"></i>
+                        <span class="fw-semibold text-white"><%= username %></span>
+                        <span class="role-badge <%= isAdmin ? "role-admin" : "role-user" %>">
+                            <%= sessionUser.getRole().toUpperCase() %>
+                        </span>
+                    </div>
+                    <a href="logout" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1 fw-bold shadow-none">
                         <i class="fa-solid fa-right-from-bracket me-1"></i> Logout
                     </a>
                 <% } else { %>
-                    <a href="login.jsp" class="btn btn-outline-warning btn-sm rounded-pill px-3.5 py-1 fw-semibold shadow-none">
+                    <a href="login.jsp" class="btn btn-outline-warning btn-sm rounded-pill px-3.5 py-1.5 fw-bold shadow-none">
                         <i class="fa-solid fa-right-to-bracket me-1.5"></i> Login
                     </a>
                 <% } %>
             </div>
         </div>
     </nav>
+
+    <!-- 2. MOVING ALERT MARQUEE BAR (UNDER NAV BAR) -->
+    <div class="subnav-marquee-banner shadow-sm">
+        <div class="container-fluid d-flex align-items-center px-4">
+            <span class="marquee-tag">
+                <i class="fa-solid fa-satellite-dish me-1"></i> LIVE TELEMETRY
+            </span>
+            <div class="overflow-hidden flex-grow-1">
+                <div id="marquee-content" class="marquee-content">
+                    <span>မြန်မာနိုင်ငံ သဘာဝဘေး အချက်အလက်များကို ရှာဖွေနေသည်... (Loading live hazards telemetry...)</span>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Main Container -->
     <div class="container-fluid py-4 px-4">
@@ -168,8 +379,8 @@
             <div class="col-md-3">
                 <div class="modern-card p-3 d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="text-uppercase small mb-1 text-muted">Total Cases</h6>
-                        <h3 class="fw-bold text-danger mb-0" id="stat-total-cases">--</h3>
+                        <div class="card-stat-label">Total Incidents</div>
+                        <div class="card-stat-val text-danger" id="stat-total-cases">--</div>
                     </div>
                     <div class="fs-1 text-danger opacity-50"><i class="fa-solid fa-file-waveform"></i></div>
                 </div>
@@ -177,8 +388,8 @@
             <div class="col-md-3">
                 <div class="modern-card p-3 d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="text-uppercase small mb-1 text-muted">Active Hotspots</h6>
-                        <h3 class="fw-bold text-warning mb-0" id="stat-active-hotspots">--</h3>
+                        <div class="card-stat-label">Active Hotspots</div>
+                        <div class="card-stat-val text-warning" id="stat-active-hotspots">--</div>
                     </div>
                     <div class="fs-1 text-warning opacity-50"><i class="fa-solid fa-fire"></i></div>
                 </div>
@@ -186,19 +397,19 @@
             <div class="col-md-3">
                 <div class="modern-card p-3 d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="text-uppercase small mb-1 text-muted">Burned Area (Est.)</h6>
-                        <h3 class="fw-bold text-info mb-0"><span id="stat-burned-acres">--</span> Acres</h3>
+                        <div class="card-stat-label">Community Reports</div>
+                        <div class="card-stat-val text-success" id="stat-community-reports">0 Verified</div>
                     </div>
-                    <div class="fs-1 text-info opacity-50"><i class="fa-solid fa-chart-area"></i></div>
+                    <div class="fs-1 text-success opacity-50"><i class="fa-solid fa-users"></i></div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="modern-card p-3 d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="text-uppercase small mb-1 text-muted">High Risk Regions</h6>
-                        <h3 class="fw-bold text-light mb-0" id="stat-high-risk">--</h3>
+                        <div class="card-stat-label">High Risk Hazards</div>
+                        <div class="card-stat-val text-info" id="stat-high-risk">--</div>
                     </div>
-                    <div class="fs-1 text-light opacity-50"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                    <div class="fs-1 text-info opacity-50"><i class="fa-solid fa-triangle-exclamation"></i></div>
                 </div>
             </div>
         </div>
@@ -208,24 +419,37 @@
             <!-- Map Column (Left) -->
             <div class="col-lg-8">
                 <div class="modern-card p-3 h-100 d-flex flex-column">
-                    <div class="d-flex justify-content-between align-items-center mb-2 px-2">
-                        <h5 class="mb-0 text-white fw-semibold">
-                            <i class="fa-solid fa-map-location-dot me-2 text-warning"></i> Geospatial Monitoring Map (Myanmar & Region)
-                        </h5>
-                        <span class="badge bg-secondary bg-opacity-25 text-light px-3 py-1 rounded-pill small">Google Roadmap & Overlays</span>
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-2 px-1 gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <h5 class="mb-0 text-white fw-bold">
+                                <i class="fa-solid fa-map-location-dot me-2 text-warning"></i> Geospatial Monitoring Map
+                            </h5>
+                            <span class="badge bg-secondary bg-opacity-25 text-warning px-2.5 py-1 rounded-pill small fw-semibold">
+                                <i class="fa-solid fa-crosshairs me-1"></i> မြေပုံပေါ် ကလစ်နှိပ်၍ သတင်းပို့ပါ
+                            </span>
+                        </div>
+
+                        <!-- Quick Region Jumps -->
+                        <div class="d-flex gap-1">
+                            <button type="button" class="region-jump-btn" onclick="jumpToCoordinates(21.9162, 95.9560, 6)">All Myanmar</button>
+                            <button type="button" class="region-jump-btn" onclick="jumpToCoordinates(22.1086, 95.1350, 9)">Sagaing / Monywa</button>
+                            <button type="button" class="region-jump-btn" onclick="jumpToCoordinates(20.1500, 93.5000, 8)">Rakhine Coast</button>
+                            <button type="button" class="region-jump-btn" onclick="jumpToCoordinates(20.7800, 97.0300, 8)">Shan State</button>
+                        </div>
                     </div>
+
                     <div id="map" class="flex-grow-1 mt-2"></div>
                 </div>
             </div>
 
             <!-- Right Column: Emergency Alerts Box & Chart -->
-            <div class="col-lg-4 d-flex flex-column gap-4">
-                <div class="modern-card p-3 flex-grow-1 d-flex flex-column">
+            <div class="col-lg-4 d-flex flex-column gap-3">
+                <div class="modern-card p-3 flex-grow-1 d-flex flex-column" style="min-height: 290px;">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="mb-0 text-white fw-semibold fs-6">
-                            <i class="fa-solid fa-bell me-2 text-warning"></i> Affected Regions & Alerts
-                        </h5>
-                        <span class="badge bg-danger rounded-pill" id="alert-count-badge">0 Active</span>
+                        <h6 class="mb-0 text-white fw-bold">
+                            <i class="fa-solid fa-bell me-1.5 text-warning"></i> Active Warnings Feed
+                        </h6>
+                        <span class="badge bg-danger rounded-pill font-monospace" id="alert-count-badge">0 Active</span>
                     </div>
 
                     <!-- Filter Controls -->
@@ -233,8 +457,9 @@
                         <div class="col-4">
                             <select id="filter-category" class="form-select form-select-sm bg-dark text-light border-secondary">
                                 <option value="all">All Hazards</option>
-                                <option value="wildfires">Wildfires Only</option>
-                                <option value="severeStorms">Storms Only</option>
+                                <option value="wildfires">Wildfires</option>
+                                <option value="severeStorms">Storms</option>
+                                <option value="floods">Floods</option>
                             </select>
                         </div>
                         <div class="col-4">
@@ -242,24 +467,26 @@
                                 <option value="">All Risks</option>
                                 <option value="High Risk">High Risk</option>
                                 <option value="Moderate">Moderate</option>
+                                <option value="Advisory">Advisory</option>
                             </select>
                         </div>
                         <div class="col-4">
-                            <input type="text" id="filter-date" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Date...">
+                            <input type="text" id="filter-date" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Search...">
                         </div>
                     </div>
+
                     <!-- Scrollable Alerts List Container -->
-                    <div class="flex-grow-1 pe-1" id="emergency-alerts-container" style="max-height: 200px; overflow-y: auto;">
-                        <p class="text-muted small text-center py-3">Loading affected regions...</p>
+                    <div class="flex-grow-1 pe-1" id="emergency-alerts-container" style="max-height: 210px; overflow-y: auto;">
+                        <p class="text-sub small text-center py-4">Loading active alerts...</p>
                     </div>
                 </div>
 
                 <!-- Incident Analytics Chart Box -->
-                <div class="modern-card p-3 flex-grow-1 d-flex flex-column">
-                    <h5 class="mb-2 text-white fw-semibold fs-6">
-                        <i class="fa-solid fa-chart-line me-2 text-warning"></i> Incident Analytics
-                    </h5>
-                    <div class="flex-grow-1 d-flex align-items-center justify-content-center" style="min-height: 180px;">
+                <div class="modern-card p-3">
+                    <h6 class="mb-2 text-white fw-bold">
+                        <i class="fa-solid fa-chart-line me-1.5 text-warning"></i> Incident Frequency (30 Days)
+                    </h6>
+                    <div style="height: 155px;">
                         <canvas id="fireChart"></canvas>
                     </div>
                 </div>
@@ -268,12 +495,94 @@
 
     </div>
 
+    <!-- 5. Crowdsourced Field Report Modal -->
+    <div class="modal fade" id="reportHazardModal" tabindex="-1" aria-labelledby="reportHazardModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content dark-modal">
+                <div class="modal-header border-secondary border-opacity-25 pb-2">
+                    <h5 class="modal-title fw-bold text-warning" id="reportHazardModalLabel">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i> သဘာဝဘေး သတင်းပေးပို့ရန် (Hazard Report)
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="reportHazardForm" onsubmit="submitHazardReport(event)">
+                    <div class="modal-body py-3">
+                        <div class="mb-3">
+                            <label class="form-label">ခေါင်းစဉ် / မြို့နယ် (Title or Location) *</label>
+                            <input type="text" id="field-title" class="form-control" required placeholder="ဥပမာ - မုံရွာ တောမီးလောင်မှု">
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label">အမျိုးအစား (Category) *</label>
+                                <select id="field-category" class="form-select" required>
+                                    <option value="wildfires">🔥 တောမီး (Wildfires)</option>
+                                    <option value="severeStorms">🌀 မုန်တိုင်း (Storms)</option>
+                                    <option value="floods">🌊 ရေကြီးရေလျှံမှု (Floods)</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">အန္တရာယ်အဆင့် (Risk Level) *</label>
+                                <select id="field-risk" class="form-select" required>
+                                    <option value="High Risk">အလွန်ပြင်းထန် (High Risk)</option>
+                                    <option value="Moderate">အလယ်အလတ် (Moderate)</option>
+                                    <option value="Advisory">သတိပေးချက် (Advisory)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label">လတ္တီတွဒ် (Latitude) *</label>
+                                <input type="number" step="any" id="field-lat" class="form-control font-monospace" required readonly>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">လောင်ဂျီတွဒ် (Longitude) *</label>
+                                <input type="number" step="any" id="field-lng" class="form-control font-monospace" required readonly>
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label">ဖြစ်ပွားချိန် (Recorded Time)</label>
+                                <input type="datetime-local" id="field-time" class="form-control">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">သတင်းပေးပို့သူ (Reporter Name)</label>
+                                <input type="text" id="field-reporter" class="form-control" placeholder="Anonymous Operator">
+                            </div>
+                        </div>
+
+                        <div class="mb-1">
+                            <label class="form-label">အသေးစိတ် အခြေအနေ (Description)</label>
+                            <textarea id="field-description" rows="3" class="form-control" placeholder="ဒေသခံများ ဘေးကင်းရာသို့ ရွှေ့ပြောင်းနေရပါသည်..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-secondary border-opacity-25 pt-2">
+                        <button type="button" class="btn btn-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal">ပယ်ဖျက်မည်</button>
+                        <button type="submit" id="btn-submit-report" class="btn btn-warning btn-sm rounded-pill px-4 fw-bold">
+                            <i class="fa-solid fa-paper-plane me-1"></i> အတည်ပြုပေးပို့မည်
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- External JS Logic -->
     <script src="js/dashboard.js"></script>
+
+    <script>
+        function jumpToCoordinates(lat, lng, zoomLevel) {
+            if (mapInstance) {
+                mapInstance.flyTo([lat, lng], zoomLevel, { duration: 1.2 });
+            }
+        }
+    </script>
 </body>
 
 </html>

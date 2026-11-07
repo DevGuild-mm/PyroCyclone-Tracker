@@ -1,6 +1,7 @@
 package controller;
 
 import dao.BookmarkDao;
+import model.Bookmark;
 import model.User;
 
 import javax.servlet.ServletException;
@@ -35,7 +36,9 @@ public class BookmarkServlet extends HttpServlet {
             return;
         }
 
-        String result = bookmarkDao.addBookmark(user.getId(), eventId.trim());
+        // Instantiate model
+        Bookmark bookmark = new Bookmark(user.getId(), eventId.trim());
+        String result = bookmarkDao.addBookmark(bookmark);
 
         if ("SUCCESS".equals(result)) {
             response.setStatus(HttpServletResponse.SC_OK);

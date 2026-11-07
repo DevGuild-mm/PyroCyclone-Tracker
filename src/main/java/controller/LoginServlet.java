@@ -16,13 +16,15 @@ public class LoginServlet extends HttpServlet {
     private final UserDao userDao = new UserDao();
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
         // Display the login form when visiting /login via browser URL
         request.getRequestDispatcher("login.jsp").forward(request, response);
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
         String usernameOrEmail = request.getParameter("usernameOrEmail");
         String password = request.getParameter("password");
 
@@ -31,7 +33,13 @@ public class LoginServlet extends HttpServlet {
         if (user != null) {
             HttpSession session = request.getSession();
             session.setAttribute("currentUser", user);
-            response.sendRedirect("index.jsp");
+
+            // Redirect based on role
+            if ("admin".equalsIgnoreCase(user.getRole())) {
+                response.sendRedirect("admin.jsp");
+            } else {
+                response.sendRedirect("index.jsp");
+            }
         } else {
             response.sendRedirect("login.jsp?error=true");
         }

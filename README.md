@@ -4,7 +4,7 @@ A lightweight Java EE web application that tracks global wildfires and severe we
 
 ## Tech Stack
 * **Backend:** Java Servlets, Apache HttpClient, Maven
-* **Frontend:** JSP (JavaServer Pages), Tailwind CSS
+* **Frontend:** JSP (JavaServer Pages), Bootstrap CSS, JavaScript
 * **Server:** Apache Tomcat 7 (Embedded via Maven plugin)
 * **Data Source:** NASA EONET (Earth Observatory Natural Event Tracker) API
 
