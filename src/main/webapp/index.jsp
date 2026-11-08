@@ -34,8 +34,8 @@
             --accent-green: #10b981;
             --accent-red: #ef4444;
             --text-main: #ffffff;
-            --text-sub: #cbd5e1;
-            --text-muted: #94a3b8;
+            --text-sub: #e2e8f0;
+            --text-muted: #cbd5e1;
         }
 
         body {
@@ -118,14 +118,14 @@
             border: 1px solid var(--border-dim); border-radius: 16px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
         }
-        .card-stat-label { font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; }
+        .card-stat-label { font-size: 11.5px; font-weight: 700; color: #e2e8f0 !important; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.4px; }
         .card-stat-val { font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 700; line-height: 1.1; }
 
-        #map { height: 490px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); cursor: crosshair; }
+        #map { height: 490px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.15); cursor: crosshair; }
 
         .alert-item {
-            padding: 12px; border-radius: 10px; background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.08); border-left: 4px solid var(--accent-red);
+            padding: 12px; border-radius: 10px; background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12); border-left: 4px solid var(--accent-red);
             margin-bottom: 8px; cursor: pointer; transition: all 0.2s ease;
         }
         .alert-item.info { border-left-color: var(--accent-blue); }
@@ -133,8 +133,8 @@
 
         .region-select-dropdown {
             background-color: #0b1220 !important;
-            color: #f8fafc !important;
-            border: 1px solid rgba(249, 115, 22, 0.5) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(249, 115, 22, 0.6) !important;
             border-radius: 8px;
             font-size: 12.5px;
             font-weight: 600;
@@ -142,8 +142,48 @@
             max-width: 250px;
         }
 
+        /* High-contrast text visibility overrides */
+        .text-muted { color: #cbd5e1 !important; }
+        .text-sub { color: #e2e8f0 !important; }
+        .form-control::placeholder, input::placeholder, textarea::placeholder {
+            color: #cbd5e1 !important;
+            opacity: 1 !important;
+        }
+        .form-label {
+            color: #ffffff !important;
+            font-weight: 600;
+        }
+
+        /* Permanent Map Region Labels */
+        .leaflet-tooltip.map-label-tooltip {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+        }
+        .map-region-label {
+            color: #ffffff;
+            font-family: 'Inter', 'Padauk', sans-serif;
+            font-size: 11.5px;
+            font-weight: 800;
+            text-align: center;
+            line-height: 1.25;
+            text-shadow:
+                -1.5px -1.5px 0 #0f172a,
+                 1.5px -1.5px 0 #0f172a,
+                -1.5px  1.5px 0 #0f172a,
+                 1.5px  1.5px 0 #0f172a,
+                 0px    2px   5px rgba(0, 0, 0, 0.95);
+            pointer-events: none;
+        }
+        .map-region-label span {
+            font-size: 10.5px;
+            font-weight: 700;
+            color: #fde047;
+        }
+
         .dark-modal { background-color: #0c1222; color: #ffffff; border: 1px solid rgba(249, 115, 22, 0.4); border-radius: 18px; }
-        .dark-modal .form-control, .dark-modal .form-select { background-color: #080c16 !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.18) !important; }
+        .dark-modal .form-control, .dark-modal .form-select { background-color: #080c16 !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.25) !important; }
         select option { background-color: #0f172a !important; color: #ffffff !important; }
     </style>
 </head>
@@ -156,43 +196,49 @@
     </script>
 
     <!-- Top Navigation -->
-    <nav class="navbar navbar-command sticky-top shadow-sm">
-        <div class="container-fluid px-0">
-            <a class="navbar-brand d-flex align-items-center gap-2.5 text-white fw-bold me-4" href="index.jsp">
+    <nav class="navbar navbar-expand-xl navbar-command sticky-top shadow-sm">
+        <div class="container-fluid px-2 px-md-3">
+            <a class="navbar-brand d-flex align-items-center gap-2 text-white fw-bold me-2 me-lg-3" href="index.jsp">
                 <div class="brand-logo-box"><i class="fa-solid fa-fire-flame-curved"></i></div>
                 <div>
-                    <div style="line-height: 1.1; font-size: 15px;">MYANMAR DISASTER COMMAND</div>
-                    <small class="text-warning fw-semibold" style="font-size: 10.5px;">Wildfire & Cyclone Early Warning</small>
+                    <div style="line-height: 1.1; font-size: 14px;">MYANMAR DISASTER COMMAND</div>
+                    <small class="text-warning fw-semibold" style="font-size: 10px;">Wildfire & Cyclone Early Warning</small>
                 </div>
             </a>
 
-            <div class="d-none d-md-flex align-items-center gap-2 me-auto">
-                <a href="index.jsp" class="nav-switch-link active"><i class="fa-solid fa-map-location-dot me-1.5"></i> Live Map</a>
-                <% if (isAdmin) { %>
-                    <a href="admin.jsp" class="nav-switch-link"><i class="fa-solid fa-shield-halved me-1.5"></i> Moderation Console</a>
-                <% } %>
-            </div>
+            <button class="navbar-toggler border-secondary bg-dark text-white ms-auto me-2" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCommandContent" aria-controls="navbarCommandContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
 
-            <div class="d-flex align-items-center gap-2.5">
-                <button type="button" class="btn btn-warning btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-sm d-flex align-items-center gap-1.5" onclick="openReportModal()">
-                    <i class="fa-solid fa-bullhorn"></i> <span>သတင်းပို့မည် (Report)</span>
-                </button>
-                <div class="pulse-badge"><span class="pulse-dot"></span> LIVE SENSORS</div>
+            <div class="collapse navbar-collapse justify-content-between align-items-center" id="navbarCommandContent">
+                <div class="d-flex align-items-center gap-2 my-2 my-xl-0">
+                    <a href="index.jsp" class="nav-switch-link active"><i class="fa-solid fa-map-location-dot me-1.5"></i> Live Map</a>
+                    <% if (isAdmin) { %>
+                        <a href="admin.jsp" class="nav-switch-link"><i class="fa-solid fa-shield-halved me-1.5"></i> Moderation Console</a>
+                    <% } %>
+                </div>
 
-                <% if (loggedIn) { %>
-                    <div class="user-identity-box">
-                        <i class="fa-solid <%= isAdmin ? "fa-user-shield text-info" : "fa-user text-warning" %> ms-1"></i>
-                        <span class="fw-semibold text-white"><%= username %></span>
-                        <span class="role-badge <%= isAdmin ? "role-admin" : "role-user" %>"><%= sessionUser.getRole().toUpperCase() %></span>
-                    </div>
-                    <a href="logout" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1 fw-bold shadow-none">
-                        <i class="fa-solid fa-right-from-bracket me-1"></i> Logout
-                    </a>
-                <% } else { %>
-                    <a href="login.jsp" class="btn btn-outline-warning btn-sm rounded-pill px-3.5 py-1.5 fw-bold shadow-none">
-                        <i class="fa-solid fa-right-to-bracket me-1.5"></i> Login
-                    </a>
-                <% } %>
+                <div class="d-flex flex-wrap align-items-center gap-2.5 my-2 my-xl-0">
+                    <button type="button" class="btn btn-warning btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-sm d-flex align-items-center gap-1.5" onclick="openReportModal()">
+                        <i class="fa-solid fa-bullhorn"></i> <span>သတင်းပို့မည် (Report)</span>
+                    </button>
+                    <div class="pulse-badge"><span class="pulse-dot"></span> LIVE SENSORS</div>
+
+                    <% if (loggedIn) { %>
+                        <div class="user-identity-box">
+                            <i class="fa-solid <%= isAdmin ? "fa-user-shield text-info" : "fa-user text-warning" %> ms-1"></i>
+                            <span class="fw-semibold text-white"><%= username %></span>
+                            <span class="role-badge <%= isAdmin ? "role-admin" : "role-user" %>"><%= sessionUser.getRole().toUpperCase() %></span>
+                        </div>
+                        <a href="logout" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1 fw-bold shadow-none">
+                            <i class="fa-solid fa-right-from-bracket me-1"></i> Logout
+                        </a>
+                    <% } else { %>
+                        <a href="login.jsp" class="btn btn-outline-warning btn-sm rounded-pill px-3.5 py-1.5 fw-bold shadow-none">
+                            <i class="fa-solid fa-right-to-bracket me-1.5"></i> Login
+                        </a>
+                    <% } %>
+                </div>
             </div>
         </div>
     </nav>
@@ -219,7 +265,7 @@
                         <div class="card-stat-label">Total Incidents</div>
                         <div class="card-stat-val text-danger" id="stat-total-cases">--</div>
                     </div>
-                    <div class="fs-1 text-danger opacity-50"><i class="fa-solid fa-file-waveform"></i></div>
+                    <div class="fs-1 text-danger opacity-75"><i class="fa-solid fa-file-waveform"></i></div>
                 </div>
             </div>
             <div class="col-md-3">
@@ -228,7 +274,7 @@
                         <div class="card-stat-label">Active Hotspots</div>
                         <div class="card-stat-val text-warning" id="stat-active-hotspots">--</div>
                     </div>
-                    <div class="fs-1 text-warning opacity-50"><i class="fa-solid fa-fire"></i></div>
+                    <div class="fs-1 text-warning opacity-75"><i class="fa-solid fa-fire"></i></div>
                 </div>
             </div>
             <div class="col-md-3">
@@ -237,7 +283,7 @@
                         <div class="card-stat-label">Community Reports</div>
                         <div class="card-stat-val text-success" id="stat-community-reports">0 Verified</div>
                     </div>
-                    <div class="fs-1 text-success opacity-50"><i class="fa-solid fa-users"></i></div>
+                    <div class="fs-1 text-success opacity-75"><i class="fa-solid fa-users"></i></div>
                 </div>
             </div>
             <div class="col-md-3">
@@ -246,7 +292,7 @@
                         <div class="card-stat-label">High Risk Hazards</div>
                         <div class="card-stat-val text-info" id="stat-high-risk">--</div>
                     </div>
-                    <div class="fs-1 text-info opacity-50"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                    <div class="fs-1 text-info opacity-75"><i class="fa-solid fa-triangle-exclamation"></i></div>
                 </div>
             </div>
         </div>
@@ -262,7 +308,7 @@
 
                         <!-- 15 States and Regions Selector -->
                         <div class="d-flex align-items-center gap-2">
-                            <label class="small text-warning fw-bold d-none d-sm-inline" style="font-size: 11px;">တိုင်း/ပြည်နယ်:</label>
+                            <label class="small text-warning fw-bold d-none d-sm-inline" style="font-size: 11.5px;">တိုင်း/ပြည်နယ်:</label>
                             <select id="region-jump-select" class="form-select form-select-sm region-select-dropdown" onchange="window.onRegionSelectChange(this.value)">
                                 <option value="all">🇲🇲 တစ်နိုင်ငံလုံး (All Myanmar)</option>
                                 <option value="kachin">ကချင်ပြည်နယ် (Kachin)</option>
@@ -298,7 +344,7 @@
 
                     <div class="row g-2 mb-2">
                         <div class="col-4">
-                            <select id="filter-category" class="form-select form-select-sm bg-dark text-light border-secondary">
+                            <select id="filter-category" class="form-select form-select-sm bg-dark text-white border-secondary">
                                 <option value="all">All Hazards</option>
                                 <option value="wildfires">Wildfires</option>
                                 <option value="severeStorms">Storms</option>
@@ -306,7 +352,7 @@
                             </select>
                         </div>
                         <div class="col-4">
-                            <select id="filter-risk" class="form-select form-select-sm bg-dark text-light border-secondary">
+                            <select id="filter-risk" class="form-select form-select-sm bg-dark text-white border-secondary">
                                 <option value="">All Risks</option>
                                 <option value="High Risk">High Risk</option>
                                 <option value="Moderate">Moderate</option>
@@ -314,7 +360,7 @@
                             </select>
                         </div>
                         <div class="col-4">
-                            <input type="text" id="filter-date" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Search...">
+                            <input type="text" id="filter-date" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Search...">
                         </div>
                     </div>
 
@@ -412,6 +458,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Cache-busting script tag -->
-    <script src="js/dashboard.js?v=3"></script>
+    <script src="js/dashboard.js?v=6"></script>
+</body>
 
 </html>

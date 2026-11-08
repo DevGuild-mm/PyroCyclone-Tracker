@@ -295,47 +295,55 @@
 <body>
 
     <!-- 1. TOP UNIFIED NAVIGATION BAR -->
-    <nav class="navbar navbar-command sticky-top shadow-sm">
-        <div class="container-fluid px-0">
+    <nav class="navbar navbar-expand-xl navbar-command sticky-top shadow-sm">
+        <div class="container-fluid px-2 px-md-3">
             <!-- Brand -->
-            <a class="navbar-brand d-flex align-items-center gap-2.5 text-white fw-bold me-4" href="index.jsp">
+            <a class="navbar-brand d-flex align-items-center gap-2 text-white fw-bold me-2 me-lg-3" href="index.jsp">
                 <div class="brand-logo-box">
                     <i class="fa-solid fa-fire-flame-curved"></i>
                 </div>
                 <div>
-                    <div style="line-height: 1.1; font-size: 15px; letter-spacing: 0.3px;">MYANMAR DISASTER COMMAND</div>
-                    <small class="text-warning fw-semibold" style="font-size: 10.5px;">Incident Triage & Moderation Console</small>
+                    <div style="line-height: 1.1; font-size: 14px;">MYANMAR DISASTER COMMAND</div>
+                    <small class="text-warning fw-semibold" style="font-size: 10px;">Incident Triage & Moderation Console</small>
                 </div>
             </a>
 
-            <!-- Page Navigation Tabs -->
-            <div class="d-none d-md-flex align-items-center gap-2 me-auto">
-                <a href="index.jsp" class="nav-switch-link">
-                    <i class="fa-solid fa-map-location-dot me-1.5"></i> Live Map
-                </a>
-                <a href="admin.jsp" class="nav-switch-link active">
-                    <i class="fa-solid fa-shield-halved me-1.5"></i> Moderation Console
-                </a>
-            </div>
+            <!-- Toggle Button for Mobile/Tablet -->
+            <button class="navbar-toggler border-secondary bg-dark text-white ms-auto me-2" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbarContent" aria-controls="adminNavbarContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
 
-            <!-- Right Controls -->
-            <div class="d-flex align-items-center gap-2.5">
-                <!-- Live Status Indicator -->
-                <div class="pulse-badge">
-                    <span class="pulse-dot"></span>
-                    <span class="d-none d-sm-inline">TRIAGE ACTIVE</span>
+            <!-- Collapsible Wrapper -->
+            <div class="collapse navbar-collapse justify-content-between align-items-center" id="adminNavbarContent">
+                <!-- Page Navigation Tabs -->
+                <div class="d-flex align-items-center gap-2 my-2 my-xl-0">
+                    <a href="index.jsp" class="nav-switch-link">
+                        <i class="fa-solid fa-map-location-dot me-1.5"></i> Live Map
+                    </a>
+                    <a href="admin.jsp" class="nav-switch-link active">
+                        <i class="fa-solid fa-shield-halved me-1.5"></i> Moderation Console
+                    </a>
                 </div>
 
-                <!-- Admin Identity Box -->
-                <div class="user-identity-box">
-                    <i class="fa-solid fa-user-shield text-info ms-1"></i>
-                    <span class="fw-semibold text-white"><%= username %></span>
-                    <span class="role-badge role-admin">ADMIN</span>
-                </div>
+                <!-- Right Controls -->
+                <div class="d-flex flex-wrap align-items-center gap-2.5 my-2 my-xl-0">
+                    <!-- Live Status Indicator -->
+                    <div class="pulse-badge">
+                        <span class="pulse-dot"></span>
+                        <span>TRIAGE ACTIVE</span>
+                    </div>
 
-                <a href="logout" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1 fw-bold shadow-none">
-                    <i class="fa-solid fa-right-from-bracket me-1"></i> Logout
-                </a>
+                    <!-- Admin Identity Box -->
+                    <div class="user-identity-box">
+                        <i class="fa-solid fa-user-shield text-info ms-1"></i>
+                        <span class="fw-semibold text-white"><%= username %></span>
+                        <span class="role-badge role-admin">ADMIN</span>
+                    </div>
+
+                    <a href="logout" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1 fw-bold shadow-none">
+                        <i class="fa-solid fa-right-from-bracket me-1"></i> Logout
+                    </a>
+                </div>
             </div>
         </div>
     </nav>

@@ -3,205 +3,102 @@ let mapInstance = null;
 let nasaHotspotLayer = null;
 let communityReportLayer = null;
 let regionBoundaryLayer = null;
+let myanmarGeoJsonLayer = null;
+let myanmarGeoJsonData = null;
 let globalEmergencyAlerts = [];
 let reportModalInstance = null;
 
+// Exact colors from your reference map + accurate property matchers
 const MYANMAR_REGIONS_DATA = {
-    "all": {
-        nameMm: "တစ်နိုင်ငံလုံး",
-        nameEn: "All Myanmar",
-        center: [21.9162, 95.9560],
-        zoom: 6,
-        keywords: []
-    },
+    "all": { nameMm: "တစ်နိုင်ငံလုံး", nameEn: "All Myanmar", center: [21.9162, 95.9560], zoom: 6, keywords: [] },
     "kachin": {
-        nameMm: "ကချင်ပြည်နယ်",
-        nameEn: "Kachin State",
-        center: [25.5, 97.5],
-        zoom: 7,
-        keywords: ["kachin", "myitkyina", "bhamo", "ကချင်"],
-        polygon: [
-            [23.8, 96.2], [24.3, 97.0], [24.7, 97.6], [25.5, 98.2], [26.8, 98.8],
-            [28.4, 98.0], [28.5, 97.3], [27.0, 96.0], [25.7, 96.3], [24.4, 95.8], [23.8, 96.2]
-        ]
+        nameMm: "ကချင်ပြည်နယ်", nameEn: "Kachin State", color: "#2574a9",
+        match: ["kachin"], keywords: ["kachin", "myitkyina", "bhamo", "ကချင်"],
+        center: [25.8, 97.4], zoom: 7
     },
     "kayah": {
-        nameMm: "ကယားပြည်နယ်",
-        nameEn: "Kayah State",
-        center: [19.25, 97.35],
-        zoom: 8,
-        keywords: ["kayah", "loikaw", "ကယား"],
-        polygon: [
-            [18.5, 96.9], [19.1, 96.9], [19.8, 97.1], [19.8, 97.8], [19.2, 97.9],
-            [18.6, 97.6], [18.5, 96.9]
-        ]
+        nameMm: "ကယားပြည်နယ်", nameEn: "Kayah State", color: "#8c821e",
+        match: ["kayah", "karenni"], keywords: ["kayah", "loikaw", "ကယား"],
+        center: [19.2, 97.3], zoom: 8
     },
     "kayin": {
-        nameMm: "ကရင်ပြည်နယ်",
-        nameEn: "Kayin State",
-        center: [16.8, 97.8],
-        zoom: 8,
-        keywords: ["kayin", "karen", "hpa-an", "ကရင်"],
-        polygon: [
-            [15.2, 98.3], [16.0, 98.6], [17.3, 98.2], [18.5, 97.5], [19.2, 96.9],
-            [18.3, 96.7], [17.4, 97.1], [16.4, 97.5], [15.2, 98.3]
-        ]
+        nameMm: "ကရင်ပြည်နယ်", nameEn: "Kayin State", color: "#de7a73",
+        match: ["kayin", "karen"], keywords: ["kayin", "karen", "hpa-an", "ကရင်"],
+        center: [17.0, 97.8], zoom: 7
     },
     "chin": {
-        nameMm: "ချင်းပြည်နယ်",
-        nameEn: "Chin State",
-        center: [22.0, 93.6],
-        zoom: 8,
-        keywords: ["chin", "hakha", "ချင်း"],
-        polygon: [
-            [21.0, 93.8], [21.5, 94.1], [22.8, 94.0], [24.1, 93.4], [23.5, 93.1],
-            [22.0, 93.0], [21.2, 93.2], [21.0, 93.8]
-        ]
+        nameMm: "ချင်းပြည်နယ်", nameEn: "Chin State", color: "#d46a6a",
+        match: ["chin"], keywords: ["chin", "hakha", "ချင်း"],
+        center: [22.5, 93.5], zoom: 7
     },
     "sagaing": {
-        nameMm: "စစ်ကိုင်းတိုင်း",
-        nameEn: "Sagaing Region",
-        center: [23.5, 95.5],
-        zoom: 7,
-        keywords: ["sagaing", "monywa", "shwebo", "စစ်ကိုင်း", "မုံရွာ"],
-        polygon: [
-            [21.8, 95.9], [22.0, 95.0], [22.5, 94.5], [23.5, 94.1], [24.8, 94.5],
-            [26.5, 95.3], [26.0, 96.2], [24.2, 96.1], [22.8, 96.0], [21.8, 95.9]
-        ]
+        nameMm: "စစ်ကိုင်းတိုင်း", nameEn: "Sagaing Region", color: "#b8e186",
+        // Added "saigang" to match your GeoJSON shapeName spelling
+        match: ["sagaing", "saigang"], keywords: ["sagaing", "saigang", "monywa", "shwebo", "စစ်ကိုင်း", "မုံရွာ"],
+        center: [23.8, 95.3], zoom: 7
     },
     "tanintharyi": {
-        nameMm: "တနင်္သာရီတိုင်း",
-        nameEn: "Tanintharyi Region",
-        center: [12.8, 98.8],
-        zoom: 7,
-        keywords: ["tanintharyi", "dawei", "myeik", "တနင်္သာရီ", "ထားဝယ်"],
-        polygon: [
-            [9.8, 98.5], [10.5, 98.8], [11.8, 99.2], [13.4, 99.1], [15.1, 98.0],
-            [14.8, 97.8], [13.4, 98.2], [11.5, 98.4], [9.8, 98.5]
-        ]
+        nameMm: "တနင်္သာရီတိုင်း", nameEn: "Tanintharyi Region", color: "#d953c4",
+        // If missing from ADM1, falls back gracefully to bounding center coordinates
+        match: ["tanintharyi", "tenasserim", "taninthari", "dawei", "myeik"], keywords: ["tanintharyi", "dawei", "myeik", "တနင်္သာရီ", "ထားဝယ်"],
+        center: [12.5, 98.8], zoom: 7
     },
     "bago": {
-        nameMm: "ပဲခူးတိုင်း",
-        nameEn: "Bago Region",
-        center: [18.0, 96.2],
-        zoom: 8,
-        keywords: ["bago", "pyay", "taungoo", "ပဲခူး"],
-        polygon: [
-            [16.8, 96.4], [17.5, 97.0], [18.8, 96.9], [19.4, 96.2], [19.0, 95.1],
-            [18.0, 95.2], [17.2, 95.8], [16.8, 96.4]
-        ]
+        nameMm: "ပဲခူးတိုင်း", nameEn: "Bago Region", color: "#34a832",
+        match: ["bago", "pegu"], keywords: ["bago", "pyay", "taungoo", "ပဲခူး"],
+        center: [18.1, 96.1], zoom: 7
     },
     "magway": {
-        nameMm: "မကွေးတိုင်း",
-        nameEn: "Magway Region",
-        center: [20.3, 94.8],
-        zoom: 7,
-        keywords: ["magway", "pakokku", "မကွေး", "ပခုက္ကူ"],
-        polygon: [
-            [18.9, 95.1], [19.5, 95.7], [20.8, 95.5], [21.8, 95.0], [21.5, 94.0],
-            [20.5, 94.2], [19.5, 94.3], [18.9, 95.1]
-        ]
+        nameMm: "မကွေးတိုင်း", nameEn: "Magway Region", color: "#9e9e9e",
+        match: ["magway", "magwe"], keywords: ["magway", "pakokku", "မကွေး", "ပခုက္ကူ"],
+        center: [20.2, 94.9], zoom: 7
     },
     "mandalay": {
-        nameMm: "မန္တလေးတိုင်း",
-        nameEn: "Mandalay Region",
-        center: [21.5, 96.0],
-        zoom: 7,
-        keywords: ["mandalay", "meiktila", "pyin oo lwin", "မန္တလေး"],
-        polygon: [
-            [19.7, 95.9], [20.5, 96.3], [21.8, 96.5], [22.4, 96.0], [21.9, 95.5],
-            [20.6, 95.4], [19.7, 95.9]
-        ]
+        nameMm: "မန္တလေးတိုင်း", nameEn: "Mandalay Region", color: "#1d4ed8",
+        match: ["mandalay"], keywords: ["mandalay", "meiktila", "pyin oo lwin", "မန္တလေး"],
+        center: [21.1, 96.0], zoom: 7
     },
     "mon": {
-        nameMm: "မွန်ပြည်နယ်",
-        nameEn: "Mon State",
-        center: [16.1, 97.6],
-        zoom: 8,
-        keywords: ["mon", "mawlamyine", "thaton", "မွန်", "မော်လမြိုင်"],
-        polygon: [
-            [14.9, 97.9], [15.3, 98.1], [16.2, 97.8], [17.4, 97.2], [16.8, 97.0],
-            [15.8, 97.4], [14.9, 97.9]
-        ]
+        nameMm: "မွန်ပြည်နယ်", nameEn: "Mon State", color: "#00b4ff",
+        match: ["mon"], keywords: ["mon", "mawlamyine", "thaton", "မွန်", "မော်လမြိုင်"],
+        center: [16.2, 97.6], zoom: 8
     },
     "rakhine": {
-        nameMm: "ရခိုင်ပြည်နယ်",
-        nameEn: "Rakhine State",
-        center: [19.8, 93.8],
-        zoom: 7,
-        keywords: ["rakhine", "sittwe", "thandwe", "murasu", "ရခိုင်", "စစ်တွေ"],
-        polygon: [
-            [17.5, 94.6], [18.5, 94.2], [19.5, 93.5], [20.5, 92.8], [21.4, 92.3],
-            [21.2, 93.0], [20.2, 93.8], [18.8, 94.5], [17.5, 94.6]
-        ]
+        nameMm: "ရခိုင်ပြည်နယ်", nameEn: "Rakhine State", color: "#456b48",
+        match: ["rakhine", "arakan"], keywords: ["rakhine", "sittwe", "thandwe", "murasu", "ရခိုင်", "စစ်တွေ"],
+        center: [19.5, 93.6], zoom: 7
     },
     "yangon": {
-        nameMm: "ရန်ကုန်တိုင်း",
-        nameEn: "Yangon Region",
-        center: [17.0, 96.15],
-        zoom: 9,
-        keywords: ["yangon", "rangoon", "ရန်ကုန်"],
-        polygon: [
-            [16.4, 96.1], [16.6, 96.4], [17.2, 96.4], [17.5, 96.1], [17.2, 95.8],
-            [16.7, 95.9], [16.4, 96.1]
-        ]
+        nameMm: "ရန်ကုန်တိုင်း", nameEn: "Yangon Region", color: "#ff1100",
+        match: ["yangon", "rangoon"], keywords: ["yangon", "rangoon", "ရန်ကုန်"],
+        center: [16.9, 96.15], zoom: 8
     },
     "shan": {
-        nameMm: "ရှမ်းပြည်နယ်",
-        nameEn: "Shan State",
-        center: [21.8, 98.2],
-        zoom: 7,
-        keywords: ["shan", "taunggyi", "lashio", "kengtung", "ရှမ်း", "တောင်ကြီး"],
-        polygon: [
-            [19.6, 97.0], [20.5, 96.5], [22.0, 96.4], [23.8, 96.8], [24.1, 98.2],
-            [23.2, 99.0], [22.5, 99.8], [21.5, 101.1], [20.4, 100.2], [19.8, 98.5], [19.6, 97.0]
-        ]
+        nameMm: "ရှမ်းပြည်နယ်", nameEn: "Shan State", color: "#a6cee3",
+        match: ["shan"], keywords: ["shan", "taunggyi", "lashio", "kengtung", "ရှမ်း", "တောင်ကြီး"],
+        center: [21.5, 98.2], zoom: 7
     },
     "ayeyarwady": {
-        nameMm: "ဧရာဝတီတိုင်း",
-        nameEn: "Ayeyarwady Region",
-        center: [16.8, 95.2],
-        zoom: 8,
-        keywords: ["ayeyarwady", "irrawaddy", "pathein", "ဧရာဝတီ", "ပုသိမ်"],
-        polygon: [
-            [15.7, 95.2], [16.0, 95.8], [17.1, 95.8], [17.8, 95.2], [17.2, 94.7],
-            [16.1, 94.3], [15.7, 95.2]
-        ]
+        nameMm: "ဧရာဝတီတိုင်း", nameEn: "Ayeyarwady Region", color: "#ff9999",
+        match: ["ayeyarwady", "irrawaddy"], keywords: ["ayeyarwady", "irrawaddy", "pathein", "ဧရာဝတီ", "ပုသိမ်"],
+        center: [16.8, 95.1], zoom: 7
     },
     "naypyidaw": {
-        nameMm: "နေပြည်တော်",
-        nameEn: "Naypyidaw Union Territory",
-        center: [19.76, 96.08],
-        zoom: 9,
-        keywords: ["naypyidaw", "nay pyi taw", "နေပြည်တော်"],
-        polygon: [
-            [19.45, 96.0], [19.6, 96.3], [20.05, 96.2], [20.0, 95.85], [19.55, 95.85], [19.45, 96.0]
-        ]
-    }
+        nameMm: "နေပြည်တော်", nameEn: "Naypyidaw Union Territory", color: "#f97316",
+        // Maps smoothly to Mandalay/Bago boundary area if unified in ADM1
+        match: ["naypyidaw", "nay pyi taw", "naypyitaw", "mandalay", "bago"], keywords: ["naypyidaw", "nay pyi taw", "နေပြည်တော်"],
+        center: [19.76, 96.08], zoom: 9
+    },
 };
 
 const FALLBACK_NASA_EVENTS = [
-    {
-        title: "Shan State Wildfire Outbreak",
-        date: "2026-11-04",
-        isStorm: false,
-        coordinates: [97.0331, 21.9162]
-    },
-    {
-        title: "Sagaing Forest Fire Hotspot",
-        date: "2026-11-06",
-        isStorm: false,
-        coordinates: [95.1350, 22.1086]
-    },
-    {
-        title: "Tropical Cyclone Murasu (Rakhine Coast)",
-        date: "2026-11-07",
-        isStorm: true,
-        coordinates: [93.5000, 18.5000]
-    }
+    { title: "Shan State Wildfire Outbreak", date: "2026-11-04", isStorm: false, coordinates: [21.9162, 97.0331] },
+    { title: "Sagaing Forest Fire Hotspot", date: "2026-11-06", isStorm: false, coordinates: [22.1086, 95.1350] },
+    { title: "Kachin Mountain Wildfire", date: "2026-11-07", isStorm: false, coordinates: [25.4000, 97.4000] },
+    { title: "Tropical Cyclone Murasu (Rakhine Coast)", date: "2026-11-07", isStorm: true, coordinates: [19.5000, 93.5000] }
 ];
 
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", async function () {
     const googleRoadmapLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
         maxZoom: 20,
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
@@ -232,8 +129,6 @@ document.addEventListener("DOMContentLoaded", function () {
         openReportModal(e.latlng.lat, e.latlng.lng);
     });
 
-    loadAllDashboardData('all');
-
     const riskFilter = document.getElementById('filter-risk');
     if (riskFilter) riskFilter.addEventListener('change', applyFilters);
 
@@ -246,15 +141,102 @@ document.addEventListener("DOMContentLoaded", function () {
             loadAllDashboardData(this.value);
         });
     }
+
+    // Load dashboard data and GeoJSON borders
+    await loadAllDashboardData('all');
+    await loadMyanmarGeoJsonBorders();
 });
 
-window.onRegionSelectChange = function (regionKey) {
+function matchRegionKeyFromFeature(feature) {
+    if (!feature || !feature.properties) return null;
+    const propsStr = JSON.stringify(feature.properties).toLowerCase();
+    for (let key in MYANMAR_REGIONS_DATA) {
+        if (key === "all") continue;
+        const matches = MYANMAR_REGIONS_DATA[key].match || [];
+        if (matches.some(m => propsStr.includes(m))) {
+            return key;
+        }
+    }
+    return null;
+}
+
+async function loadMyanmarGeoJsonBorders() {
+    if (!myanmarGeoJsonData) {
+        // 1. Try local file first, then exact HDX/geoBoundaries commit 9469f09
+        const urls = [
+            'js/myanmar_states.geojson?v=' + Date.now(),
+            'https://raw.githubusercontent.com/wmgeolab/geoBoundaries/9469f09/releaseData/gbOpen/MMR/ADM1/geoBoundaries-MMR-ADM1_simplified.geojson',
+            'https://cdn.jsdelivr.net/gh/wmgeolab/geoBoundaries@9469f09/releaseData/gbOpen/MMR/ADM1/geoBoundaries-MMR-ADM1_simplified.geojson'
+        ];
+
+        for (const url of urls) {
+            try {
+                const res = await fetch(url);
+                if (res.ok) {
+                    const text = await res.text();
+                    if (text.trim().startsWith('version https://git-lfs')) {
+                        console.warn(`Local file ${url} is still a Git LFS pointer, fetching from CDN...`);
+                        continue;
+                    }
+                    const parsed = JSON.parse(text);
+                    if (parsed && Array.isArray(parsed.features) && parsed.features.length > 0) {
+                        myanmarGeoJsonData = parsed;
+                        console.log("✅ Loaded accurate Myanmar GeoJSON with", parsed.features.length, "features.");
+                        break;
+                    }
+                }
+            } catch (err) {
+                console.warn(`Failed loading GeoJSON from ${url}:`, err);
+            }
+        }
+    }
+
+    if (!myanmarGeoJsonData) return;
+
+    if (myanmarGeoJsonLayer) {
+        regionBoundaryLayer.removeLayer(myanmarGeoJsonLayer);
+    }
+
+    // Draw subtle state/region borders across all of Myanmar
+    myanmarGeoJsonLayer = L.geoJSON(myanmarGeoJsonData, {
+        style: function (feature) {
+            const key = matchRegionKeyFromFeature(feature);
+            const regionColor = key ? MYANMAR_REGIONS_DATA[key].color : '#334155';
+            return {
+                color: '#1e293b',
+                weight: 1.2,
+                opacity: 0.7,
+                fillColor: regionColor,
+                fillOpacity: 0.12
+            };
+        },
+        onEachFeature: function (feature, layer) {
+            const key = matchRegionKeyFromFeature(feature);
+            if (key) {
+                const reg = MYANMAR_REGIONS_DATA[key];
+                layer.bindTooltip(`<b>${reg.nameMm}</b> (${reg.nameEn})`, { sticky: true });
+            }
+            layer.on('click', function (e) {
+                L.DomEvent.stopPropagation(e);
+                if (key) {
+                    document.getElementById('region-jump-select').value = key;
+                    window.onRegionSelectChange(key);
+                }
+            });
+        }
+    }).addTo(regionBoundaryLayer);
+}
+
+window.onRegionSelectChange = async function (regionKey) {
     const region = MYANMAR_REGIONS_DATA[regionKey];
     if (!region || !mapInstance) return;
 
     if (regionBoundaryLayer) {
         regionBoundaryLayer.clearLayers();
     }
+
+    // Ensure GeoJSON is loaded
+    await loadMyanmarGeoJsonBorders();
 
     const filterInput = document.getElementById('filter-date');
 
@@ -265,37 +247,31 @@ window.onRegionSelectChange = function (regionKey) {
         return;
     }
 
+    // Match all features belonging to the selected region (e.g. Shan North/South/East)
+    let matchedFeatures = [];
+    if (myanmarGeoJsonData && myanmarGeoJsonData.features) {
+        matchedFeatures = myanmarGeoJsonData.features.filter(f => matchRegionKeyFromFeature(f) === regionKey);
+    }
+
     let regionHazards = globalEmergencyAlerts.filter(alert => {
         let text = (alert.township + " " + alert.desc).toLowerCase();
         return region.keywords.some(kw => text.includes(kw.toLowerCase()));
     });
 
-    if (region.polygon) {
-        const polygonLayer = L.polygon(region.polygon, {
-            color: '#f97316',
-            weight: 3.5,
-            opacity: 1.0,
-            fillColor: '#f97316',
-            fillOpacity: 0.18,
-            dashArray: '5, 5'
+    // Draw the exact region border when selected!
+    if (matchedFeatures.length > 0) {
+        const highlightColor = region.color || '#f97316';
+        const exactBorderLayer = L.geoJSON({ type: "FeatureCollection", features: matchedFeatures }, {
+            style: {
+                color: '#f97316',          // Crisp orange outer border
+                weight: 3.5,
+                opacity: 1.0,
+                fillColor: highlightColor, // Reference map region color fill
+                fillOpacity: 0.45
+            }
         }).addTo(regionBoundaryLayer);
 
-        polygonLayer.bindPopup(`
-            <div style="font-size: 13px; color: #0f172a; min-width: 210px;">
-                <h6 style="font-weight: bold; margin-bottom: 2px; color: #c2410c;">📍 ${region.nameMm}</h6>
-                <small class="text-muted fw-semibold">${region.nameEn}</small>
-                <hr style="margin: 6px 0;"/>
-                <div style="font-size: 11.5px; line-height: 1.5;">
-                    <b>ဒေသတွင်း ဘေးအန္တရာယ်:</b> <span class="badge ${regionHazards.length > 0 ? 'bg-danger' : 'bg-success'}">${regionHazards.length} ခု</span><br>
-                    ${regionHazards.length > 0
-            ? '<span class="text-danger fw-bold">⚠️ တောမီး သို့မဟုတ် မုန်တိုင်း သတိပေးချက် တည်ရှိနေပါသည်။</span>'
-            : '<span class="text-success fw-bold">✅ လက်ရှိတွင် ကြီးမားသော ဘေးအန္တရာယ် မရှိပါ။</span>'}
-                </div>
-            </div>
-        `);
-
-        mapInstance.fitBounds(polygonLayer.getBounds(), { padding: [35, 35], maxZoom: region.zoom + 1 });
-        setTimeout(() => polygonLayer.openPopup(), 450);
+        bindPopupAndFit(exactBorderLayer, region, regionHazards);
     } else {
         mapInstance.flyTo(region.center, region.zoom, { duration: 1.2 });
     }
@@ -305,6 +281,25 @@ window.onRegionSelectChange = function (regionKey) {
         applyFilters();
     }
 };
+
+function bindPopupAndFit(layer, region, regionHazards) {
+    layer.bindPopup(`
+        <div style="font-size: 13px; color: #0f172a; min-width: 210px;">
+            <h6 style="font-weight: bold; margin-bottom: 2px; color: #c2410c;">📍 ${region.nameMm}</h6>
+            <small style="color: #475569; font-weight: 600;">${region.nameEn}</small>
+            <hr style="margin: 6px 0;"/>
+            <div style="font-size: 11.5px; line-height: 1.5;">
+                <b>ဒေသတွင်း ဘေးအန္တရာယ်:</b> <span class="badge ${regionHazards.length > 0 ? 'bg-danger' : 'bg-success'}">${regionHazards.length} ခု</span><br>
+                ${regionHazards.length > 0
+            ? '<span class="text-danger fw-bold">⚠️ တောမီး သို့မဟုတ် မုန်တိုင်း သတိပေးချက် တည်ရှိနေပါသည်။</span>'
+            : '<span class="text-success fw-bold">✅ လက်ရှိတွင် ကြီးမားသော ဘေးအန္တရာယ် မရှိပါ။</span>'}
+            </div>
+        </div>
+    `);
+
+    mapInstance.fitBounds(layer.getBounds(), { padding: [35, 35] });
+    setTimeout(() => layer.openPopup(), 450);
+}
 
 async function loadAllDashboardData(category = 'all') {
     let rawNasaData = null;
@@ -346,7 +341,7 @@ async function loadAllDashboardData(category = 'all') {
 }
 
 function extractCoordinates(geometry) {
-    if (!geometry) return [95.9560, 21.9162];
+    if (!geometry) return [21.9162, 95.9560];
 
     if (geometry.coordinates) {
         let coords = geometry.coordinates;
@@ -354,18 +349,15 @@ function extractCoordinates(geometry) {
             coords = coords[0];
         }
         if (Array.isArray(coords) && coords.length >= 2) {
-            return [Number(coords[0]) || 95.9560, Number(coords[1]) || 21.9162];
+            return [Number(coords[1]) || 21.9162, Number(coords[0]) || 95.9560];
         }
     }
 
-    if (Array.isArray(geometry) && geometry.length > 0) {
-        let latest = geometry[geometry.length - 1];
-        if (latest && latest.coordinates) {
-            return [Number(latest.coordinates[0]) || 95.9560, Number(latest.coordinates[1]) || 21.9162];
-        }
+    if (Array.isArray(geometry) && geometry.length >= 2) {
+        return [Number(geometry[0]) || 21.9162, Number(geometry[1]) || 95.9560];
     }
 
-    return [95.9560, 21.9162];
+    return [21.9162, 95.9560];
 }
 
 function processCombinedData(nasaPayload, communityReports) {
@@ -393,11 +385,11 @@ function processCombinedData(nasaPayload, communityReports) {
     rawEvents.forEach((item) => {
         try {
             const props = item.properties || item;
-            const geom = item.geometry || item.geometries || { coordinates: item.coordinates };
-            const [lng, lat] = extractCoordinates(geom);
+            const geom = item.geometry || item.geometries || item.coordinates;
+            const [lat, lng] = extractCoordinates(geom);
 
-            const title = props.title || "Disaster Event";
-            const eventDate = props.date ? props.date.substring(0, 10) : "Recent";
+            const title = props.title || item.title || "Disaster Event";
+            const eventDate = props.date || item.date ? (props.date || item.date).substring(0, 10) : "Recent";
 
             const lowerTitle = title.toLowerCase();
             let isStorm = item.isStorm || lowerTitle.includes('cyclone') || lowerTitle.includes('storm') || lowerTitle.includes('hurricane') || lowerTitle.includes('typhoon');
@@ -406,9 +398,7 @@ function processCombinedData(nasaPayload, communityReports) {
             else wildfireCount++;
 
             let risk = "High Risk";
-            let myanmarDesc = isStorm
-                ? "🌀 မုန်တိုင်း/စိုင်ကလုန်းအန္တရာယ် သတိပေးချက် (NASA EONET)"
-                : "🔥 တောမီးလောင်မှုအန္တရာယ် သတိပေးချက် (NASA EONET)";
+            let myanmarDesc = isStorm ? "🌀 မုန်တိုင်း/စိုင်ကလုန်းအန္တရာယ် သတိပေးချက်" : "🔥 တောမီးလောင်မှုအန္တရာယ် သတိပေးချက်";
             let iconSymbol = isStorm ? "🌀" : "🔥";
 
             combinedAlerts.push({
@@ -544,12 +534,12 @@ function renderEmergencyAlerts(alertsList) {
             <div class="alert-item ${borderClass}" onclick="focusOnAlert(${item.lat}, ${item.lng})">
                 <div class="d-flex justify-content-between align-items-center mb-1">
                     <span class="fw-bold ${textClass} small">${item.township} ${sourceTag}</span>
-                    <span class="text-muted" style="font-size: 10px;">${item.time}</span>
+                    <span class="text-muted" style="font-size: 10.5px;">${item.time}</span>
                 </div>
-                <p class="mb-0 text-light small">${item.desc}</p>
+                <p class="mb-0 text-white small">${item.desc}</p>
                 <div class="mt-1 d-flex justify-content-between align-items-center">
-                    <span class="badge bg-dark border border-secondary" style="font-size: 9px;">${item.risk}</span>
-                    <small class="text-muted" style="font-size: 9px;">📍 Lat: ${item.lat.toFixed(3)}, Lng: ${item.lng.toFixed(3)}</small>
+                    <span class="badge bg-dark border border-secondary text-white" style="font-size: 9.5px;">${item.risk}</span>
+                    <small class="text-muted" style="font-size: 10px;">📍 Lat: ${item.lat.toFixed(3)}, Lng: ${item.lng.toFixed(3)}</small>
                 </div>
             </div>`;
     });
@@ -557,7 +547,7 @@ function renderEmergencyAlerts(alertsList) {
     container.innerHTML = htmlContent;
 }
 
-window.focusOnAlert = function(lat, lng) {
+window.focusOnAlert = function (lat, lng) {
     if (mapInstance && lat && lng) {
         mapInstance.flyTo([lat, lng], 9, { duration: 1.0 });
     }
@@ -594,7 +584,7 @@ function updateChart(chartData) {
                 label: 'ဘေးအန္တရာယ် အခြေအနေများ (Total Incidents)',
                 data: chartData.caseCounts,
                 borderColor: '#f97316',
-                backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                backgroundColor: 'rgba(249, 115, 22, 0.15)',
                 borderWidth: 2,
                 fill: true,
                 tension: 0.4
@@ -605,8 +595,8 @@ function updateChart(chartData) {
             maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
-                x: { ticks: { color: '#aaa', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } },
-                y: { ticks: { color: '#aaa', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                x: { ticks: { color: '#e2e8f0', font: { size: 10.5 } }, grid: { color: 'rgba(255,255,255,0.08)' } },
+                y: { ticks: { color: '#e2e8f0', font: { size: 10.5 } }, grid: { color: 'rgba(255,255,255,0.08)' } }
             }
         }
     });
