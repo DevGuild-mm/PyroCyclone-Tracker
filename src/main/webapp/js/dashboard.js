@@ -6,7 +6,6 @@ let regionBoundaryLayer = null;
 let globalEmergencyAlerts = [];
 let reportModalInstance = null;
 
-// Registry of Myanmar States & Regions with boundaries and keywords
 const MYANMAR_REGIONS_DATA = {
     "all": {
         nameMm: "တစ်နိုင်ငံလုံး",
@@ -130,7 +129,7 @@ const MYANMAR_REGIONS_DATA = {
         nameEn: "Rakhine State",
         center: [19.8, 93.8],
         zoom: 7,
-        keywords: ["rakhine", "sittwe", "thandwe", "ရခိုင်", "စစ်တွေ"],
+        keywords: ["rakhine", "sittwe", "thandwe", "murasu", "ရခိုင်", "စစ်တွေ"],
         polygon: [
             [17.5, 94.6], [18.5, 94.2], [19.5, 93.5], [20.5, 92.8], [21.4, 92.3],
             [21.2, 93.0], [20.2, 93.8], [18.8, 94.5], [17.5, 94.6]
@@ -181,25 +180,24 @@ const MYANMAR_REGIONS_DATA = {
     }
 };
 
-// Fallback items if NASA EONET is unreachable or times out
 const FALLBACK_NASA_EVENTS = [
     {
         title: "Shan State Wildfire Outbreak",
         date: "2026-11-04",
-        categories: [{ id: "wildfires" }],
-        geometry: { coordinates: [97.0331, 21.9162] }
+        isStorm: false,
+        coordinates: [97.0331, 21.9162]
     },
     {
         title: "Sagaing Forest Fire Hotspot",
         date: "2026-11-06",
-        categories: [{ id: "wildfires" }],
-        geometry: { coordinates: [95.1350, 22.1086] }
+        isStorm: false,
+        coordinates: [95.1350, 22.1086]
     },
     {
-        title: "Tropical Cyclone Murasu",
+        title: "Tropical Cyclone Murasu (Rakhine Coast)",
         date: "2026-11-07",
-        categories: [{ id: "severeStorms" }],
-        geometry: { coordinates: [93.5000, 18.5000] }
+        isStorm: true,
+        coordinates: [93.5000, 18.5000]
     }
 ];
 
@@ -210,7 +208,7 @@ document.addEventListener("DOMContentLoaded", function () {
         attribution: '&copy; Google Maps'
     });
 
-    const myanmarBounds = L.latLngBounds([9.0, 91.5], [28.8, 101.5])[3, 6, 10];
+    const myanmarBounds = L.latLngBounds([9.0, 91.5], [28.8, 101.5]);
 
     mapInstance = L.map('map', {
         center: [21.9162, 95.9560],
@@ -222,30 +220,34 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     regionBoundaryLayer = L.layerGroup().addTo(mapInstance);
-    nasaHotspotLayer = L.layerGroup().addTo(mapInstance)[10];
-    communityReportLayer = L.layerGroup().addTo(mapInstance)[10];
+    nasaHotspotLayer = L.layerGroup().addTo(mapInstance);
+    communityReportLayer = L.layerGroup().addTo(mapInstance);
 
     const modalEl = document.getElementById('reportHazardModal');
-    if (modalEl) reportModalInstance = new bootstrap.Modal(modalEl)[10];
+    if (modalEl) {
+        reportModalInstance = new bootstrap.Modal(modalEl);
+    }
 
     mapInstance.on('click', function (e) {
-        openReportModal(e.latlng.lat, e.latlng.lng)[10];
+        openReportModal(e.latlng.lat, e.latlng.lng);
     });
 
-    loadAllDashboardData('all')[10];
+    loadAllDashboardData('all');
 
-    document.getElementById('filter-risk').addEventListener('change', applyFilters)[3, 6, 10];
-    document.getElementById('filter-date').addEventListener('input', applyFilters)[3, 6, 10];
+    const riskFilter = document.getElementById('filter-risk');
+    if (riskFilter) riskFilter.addEventListener('change', applyFilters);
+
+    const dateFilter = document.getElementById('filter-date');
+    if (dateFilter) dateFilter.addEventListener('input', applyFilters);
 
     const categoryFilter = document.getElementById('filter-category');
     if (categoryFilter) {
         categoryFilter.addEventListener('change', function () {
-            loadAllDashboardData(this.value)[10];
+            loadAllDashboardData(this.value);
         });
     }
 });
 
-// Explicitly attached to window scope
 window.onRegionSelectChange = function (regionKey) {
     const region = MYANMAR_REGIONS_DATA[regionKey];
     if (!region || !mapInstance) return;
@@ -254,9 +256,11 @@ window.onRegionSelectChange = function (regionKey) {
         regionBoundaryLayer.clearLayers();
     }
 
+    const filterInput = document.getElementById('filter-date');
+
     if (regionKey === "all") {
         mapInstance.flyTo(region.center, region.zoom, { duration: 1.2 });
-        document.getElementById('filter-date').value = "";
+        if (filterInput) filterInput.value = "";
         applyFilters();
         return;
     }
@@ -277,7 +281,7 @@ window.onRegionSelectChange = function (regionKey) {
         }).addTo(regionBoundaryLayer);
 
         polygonLayer.bindPopup(`
-            <div style="font-size: 13px; color: #0f172a; min-width: 200px;">
+            <div style="font-size: 13px; color: #0f172a; min-width: 210px;">
                 <h6 style="font-weight: bold; margin-bottom: 2px; color: #c2410c;">📍 ${region.nameMm}</h6>
                 <small class="text-muted fw-semibold">${region.nameEn}</small>
                 <hr style="margin: 6px 0;"/>
@@ -291,63 +295,59 @@ window.onRegionSelectChange = function (regionKey) {
         `);
 
         mapInstance.fitBounds(polygonLayer.getBounds(), { padding: [35, 35], maxZoom: region.zoom + 1 });
-        setTimeout(() => polygonLayer.openPopup(), 400);
+        setTimeout(() => polygonLayer.openPopup(), 450);
     } else {
         mapInstance.flyTo(region.center, region.zoom, { duration: 1.2 });
     }
 
-    const filterInput = document.getElementById('filter-date');
     if (filterInput) {
         filterInput.value = region.nameEn.split(" ")[0];
         applyFilters();
     }
 };
 
-/**
- * Loads NASA EONET events and verified Crowdsourced Reports in parallel
- */
 async function loadAllDashboardData(category = 'all') {
+    let rawNasaData = null;
+    let verifiedReports = [];
+
     try {
         let nasaUrl = 'api/events?days=30';
         if (category !== 'all') {
             nasaUrl += '&category=' + category;
         }
-
-        const [nasaRes, communityRes] = await Promise.all([
-            fetch(nasaUrl).catch(() => null),
-            fetch('api/reports?status=Verified').catch(() => null)
-        ])[10];
-
-        let rawNasaData = null;
-        if (nasaRes && nasaRes.ok) {
+        const nasaRes = await fetch(nasaUrl);
+        if (nasaRes.ok) {
+            const text = await nasaRes.text();
             try {
-                rawNasaData = await nasaRes.json();
-            } catch (e) {
-                console.warn("Failed to parse NASA JSON:", e);
+                rawNasaData = JSON.parse(text);
+            } catch (err) {
+                console.warn("NASA API returned non-JSON:", text.substring(0, 80));
             }
         }
-
-        let verifiedReports = [];
-        if (communityRes && communityRes.ok) {
-            try {
-                verifiedReports = await communityRes.json();
-            } catch (e) {
-                console.warn("Failed to parse Reports JSON:", e);
-            }
-        }
-
-        processCombinedData(rawNasaData, verifiedReports);
-
-    } catch (error) {
-        console.error("Error loading dashboard data:", error);
-        document.getElementById('marquee-content').innerHTML = "<span>⚠️ အမှား: ဒေတာများ ချိတ်ဆက်၍ မရနိုင်ပါ။</span>";
+    } catch (e) {
+        console.warn("Error fetching api/events:", e);
     }
+
+    try {
+        const commRes = await fetch('api/reports?status=Verified');
+        if (commRes.ok) {
+            const text = await commRes.text();
+            try {
+                verifiedReports = JSON.parse(text);
+            } catch (err) {
+                console.warn("Reports API returned non-JSON:", text.substring(0, 80));
+            }
+        }
+    } catch (e) {
+        console.warn("Error fetching api/reports:", e);
+    }
+
+    processCombinedData(rawNasaData, verifiedReports);
 }
 
 function extractCoordinates(geometry) {
     if (!geometry) return [95.9560, 21.9162];
 
-    // 1. GeoJSON format
     if (geometry.coordinates) {
         let coords = geometry.coordinates;
         while (Array.isArray(coords) && coords.length > 0 && Array.isArray(coords[0])) {
@@ -358,10 +358,9 @@ function extractCoordinates(geometry) {
         }
     }
 
-    // 2. Raw NASA EONET geometries array format
     if (Array.isArray(geometry) && geometry.length > 0) {
         let latest = geometry[geometry.length - 1];
-        if (latest.coordinates) {
+        if (latest && latest.coordinates) {
             return [Number(latest.coordinates[0]) || 95.9560, Number(latest.coordinates[1]) || 21.9162];
         }
     }
@@ -372,7 +371,6 @@ function extractCoordinates(geometry) {
 function processCombinedData(nasaPayload, communityReports) {
     let rawEvents = [];
 
-    // Supports Array, features, or events
     if (Array.isArray(nasaPayload)) {
         rawEvents = nasaPayload;
     } else if (nasaPayload && Array.isArray(nasaPayload.features)) {
@@ -381,9 +379,7 @@ function processCombinedData(nasaPayload, communityReports) {
         rawEvents = nasaPayload.events;
     }
 
-    // Fallback if NASA API was empty or unreachable
-    if (rawEvents.length === 0) {
-        console.info("NASA API returned no events or was unreachable. Using regional fallback alerts.");
+    if (!rawEvents || rawEvents.length === 0) {
         rawEvents = FALLBACK_NASA_EVENTS;
     }
 
@@ -397,14 +393,14 @@ function processCombinedData(nasaPayload, communityReports) {
     rawEvents.forEach((item) => {
         try {
             const props = item.properties || item;
-            const geom = item.geometry || item.geometries;
+            const geom = item.geometry || item.geometries || { coordinates: item.coordinates };
             const [lng, lat] = extractCoordinates(geom);
 
             const title = props.title || "Disaster Event";
             const eventDate = props.date ? props.date.substring(0, 10) : "Recent";
 
             const lowerTitle = title.toLowerCase();
-            let isStorm = lowerTitle.includes('cyclone') || lowerTitle.includes('storm') || lowerTitle.includes('hurricane') || lowerTitle.includes('typhoon');
+            let isStorm = item.isStorm || lowerTitle.includes('cyclone') || lowerTitle.includes('storm') || lowerTitle.includes('hurricane') || lowerTitle.includes('typhoon');
 
             if (isStorm) stormCount++;
             else wildfireCount++;
@@ -454,6 +450,8 @@ function processCombinedData(nasaPayload, communityReports) {
 
             let iconSymbol = isStorm ? "🌀" : (isFlood ? "🌊" : "🔥");
             let repDate = rep.recordedTime ? rep.recordedTime.substring(0, 10) : "Recent";
+            let latVal = parseFloat(rep.latitude) || 21.9162;
+            let lngVal = parseFloat(rep.longitude) || 95.9560;
 
             combinedAlerts.push({
                 source: 'COMMUNITY',
@@ -463,14 +461,14 @@ function processCombinedData(nasaPayload, communityReports) {
                 desc: rep.description || "ကွင်းဆင်း စိစစ်အတည်ပြုထားသော ဘေးအန္တရာယ် သတင်းပေးပို့ချက်။",
                 isStorm: isStorm,
                 isFlood: isFlood,
-                lat: parseFloat(rep.latitude),
-                lng: parseFloat(rep.longitude)
+                lat: latVal,
+                lng: lngVal
             });
 
             verifiedCommunitySpots.push({
                 id: rep.id,
-                lat: parseFloat(rep.latitude),
-                lng: parseFloat(rep.longitude),
+                lat: latVal,
+                lng: lngVal,
                 title: rep.title,
                 category: rep.category,
                 risk: rep.riskLevel,
@@ -496,16 +494,18 @@ function processCombinedData(nasaPayload, communityReports) {
         chartCounts = [0];
     }
 
-    let totalCases = rawEvents.length + (communityReports ? communityReports.length : 0);
+    let communityCount = Array.isArray(communityReports) ? communityReports.length : 0;
+    let totalCases = rawEvents.length + communityCount;
+
     const topAlertText = totalCases > 0
-        ? `⚠️ သတိပေးချက် - တောမီး (${wildfireCount})၊ မုန်တိုင်း (${stormCount})၊ ရေကြီးမှု (${floodCount}) နှင့် ကွင်းဆင်းသတင်း (${communityReports ? communityReports.length : 0}) ခု တည်ရှိနေပါသည်။`
+        ? `⚠️ သတိပေးချက် - တောမီး (${wildfireCount})၊ မုန်တိုင်း (${stormCount})၊ ရေကြီးမှု (${floodCount}) နှင့် ကွင်းဆင်းသတင်း (${communityCount}) ခု တည်ရှိနေပါသည်။`
         : "လက်ရှိတွင် သဘာဝဘေး အရေးပေါ်သတိပေးချက် မရှိပါ။";
 
     updateMarqueeAlert(topAlertText);
 
     document.getElementById('stat-total-cases').innerText = totalCases;
     document.getElementById('stat-active-hotspots').innerText = wildfireCount;
-    document.getElementById('stat-community-reports').innerText = (communityReports ? communityReports.length : 0) + " Verified";
+    document.getElementById('stat-community-reports').innerText = communityCount + " Verified";
     document.getElementById('stat-high-risk').innerText = (stormCount + floodCount) + " Severe Hazards";
 
     globalEmergencyAlerts = combinedAlerts;
@@ -541,7 +541,7 @@ function renderEmergencyAlerts(alertsList) {
         let sourceTag = item.source === 'COMMUNITY' ? '<span class="badge bg-success ms-1" style="font-size: 9px;">Field Report</span>' : '<span class="badge bg-secondary ms-1" style="font-size: 9px;">NASA</span>';
 
         htmlContent += `
-            <div class="alert-item ${borderClass}">
+            <div class="alert-item ${borderClass}" onclick="focusOnAlert(${item.lat}, ${item.lng})">
                 <div class="d-flex justify-content-between align-items-center mb-1">
                     <span class="fw-bold ${textClass} small">${item.township} ${sourceTag}</span>
                     <span class="text-muted" style="font-size: 10px;">${item.time}</span>
@@ -556,6 +556,12 @@ function renderEmergencyAlerts(alertsList) {
 
     container.innerHTML = htmlContent;
 }
+
+window.focusOnAlert = function(lat, lng) {
+    if (mapInstance && lat && lng) {
+        mapInstance.flyTo([lat, lng], 9, { duration: 1.0 });
+    }
+};
 
 function applyFilters() {
     const selectedRisk = document.getElementById('filter-risk').value;
@@ -574,7 +580,10 @@ function applyFilters() {
 }
 
 function updateChart(chartData) {
-    const ctx = document.getElementById('fireChart').getContext('2d');
+    const chartEl = document.getElementById('fireChart');
+    if (!chartEl || typeof Chart === 'undefined') return;
+
+    const ctx = chartEl.getContext('2d');
     if (fireChartInstance) fireChartInstance.destroy();
 
     fireChartInstance = new Chart(ctx, {
@@ -604,6 +613,7 @@ function updateChart(chartData) {
 }
 
 function renderNasaHotspots(hotspots) {
+    if (!nasaHotspotLayer) return;
     nasaHotspotLayer.clearLayers();
 
     hotspots.forEach(spot => {
@@ -641,6 +651,7 @@ function renderNasaHotspots(hotspots) {
 }
 
 function renderCommunityMarkers(reports) {
+    if (!communityReportLayer) return;
     communityReportLayer.clearLayers();
 
     reports.forEach(rep => {

@@ -412,6 +412,6 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Cache-busting script tag -->
-    <script src="js/dashboard.js?v=<%= java.lang.System.currentTimeMillis() %>"></script>
+    <script src="js/dashboard.js?v=3"></script>
 
 </html>
