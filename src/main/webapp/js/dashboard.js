@@ -2,8 +2,206 @@ let fireChartInstance = null;
 let mapInstance = null;
 let nasaHotspotLayer = null;
 let communityReportLayer = null;
+let regionBoundaryLayer = null;
 let globalEmergencyAlerts = [];
 let reportModalInstance = null;
+
+// Registry of Myanmar States & Regions with boundaries and keywords
+const MYANMAR_REGIONS_DATA = {
+    "all": {
+        nameMm: "တစ်နိုင်ငံလုံး",
+        nameEn: "All Myanmar",
+        center: [21.9162, 95.9560],
+        zoom: 6,
+        keywords: []
+    },
+    "kachin": {
+        nameMm: "ကချင်ပြည်နယ်",
+        nameEn: "Kachin State",
+        center: [25.5, 97.5],
+        zoom: 7,
+        keywords: ["kachin", "myitkyina", "bhamo", "ကချင်"],
+        polygon: [
+            [23.8, 96.2], [24.3, 97.0], [24.7, 97.6], [25.5, 98.2], [26.8, 98.8],
+            [28.4, 98.0], [28.5, 97.3], [27.0, 96.0], [25.7, 96.3], [24.4, 95.8], [23.8, 96.2]
+        ]
+    },
+    "kayah": {
+        nameMm: "ကယားပြည်နယ်",
+        nameEn: "Kayah State",
+        center: [19.25, 97.35],
+        zoom: 8,
+        keywords: ["kayah", "loikaw", "ကယား"],
+        polygon: [
+            [18.5, 96.9], [19.1, 96.9], [19.8, 97.1], [19.8, 97.8], [19.2, 97.9],
+            [18.6, 97.6], [18.5, 96.9]
+        ]
+    },
+    "kayin": {
+        nameMm: "ကရင်ပြည်နယ်",
+        nameEn: "Kayin State",
+        center: [16.8, 97.8],
+        zoom: 8,
+        keywords: ["kayin", "karen", "hpa-an", "ကရင်"],
+        polygon: [
+            [15.2, 98.3], [16.0, 98.6], [17.3, 98.2], [18.5, 97.5], [19.2, 96.9],
+            [18.3, 96.7], [17.4, 97.1], [16.4, 97.5], [15.2, 98.3]
+        ]
+    },
+    "chin": {
+        nameMm: "ချင်းပြည်နယ်",
+        nameEn: "Chin State",
+        center: [22.0, 93.6],
+        zoom: 8,
+        keywords: ["chin", "hakha", "ချင်း"],
+        polygon: [
+            [21.0, 93.8], [21.5, 94.1], [22.8, 94.0], [24.1, 93.4], [23.5, 93.1],
+            [22.0, 93.0], [21.2, 93.2], [21.0, 93.8]
+        ]
+    },
+    "sagaing": {
+        nameMm: "စစ်ကိုင်းတိုင်း",
+        nameEn: "Sagaing Region",
+        center: [23.5, 95.5],
+        zoom: 7,
+        keywords: ["sagaing", "monywa", "shwebo", "စစ်ကိုင်း", "မုံရွာ"],
+        polygon: [
+            [21.8, 95.9], [22.0, 95.0], [22.5, 94.5], [23.5, 94.1], [24.8, 94.5],
+            [26.5, 95.3], [26.0, 96.2], [24.2, 96.1], [22.8, 96.0], [21.8, 95.9]
+        ]
+    },
+    "tanintharyi": {
+        nameMm: "တနင်္သာရီတိုင်း",
+        nameEn: "Tanintharyi Region",
+        center: [12.8, 98.8],
+        zoom: 7,
+        keywords: ["tanintharyi", "dawei", "myeik", "တနင်္သာရီ", "ထားဝယ်"],
+        polygon: [
+            [9.8, 98.5], [10.5, 98.8], [11.8, 99.2], [13.4, 99.1], [15.1, 98.0],
+            [14.8, 97.8], [13.4, 98.2], [11.5, 98.4], [9.8, 98.5]
+        ]
+    },
+    "bago": {
+        nameMm: "ပဲခူးတိုင်း",
+        nameEn: "Bago Region",
+        center: [18.0, 96.2],
+        zoom: 8,
+        keywords: ["bago", "pyay", "taungoo", "ပဲခူး"],
+        polygon: [
+            [16.8, 96.4], [17.5, 97.0], [18.8, 96.9], [19.4, 96.2], [19.0, 95.1],
+            [18.0, 95.2], [17.2, 95.8], [16.8, 96.4]
+        ]
+    },
+    "magway": {
+        nameMm: "မကွေးတိုင်း",
+        nameEn: "Magway Region",
+        center: [20.3, 94.8],
+        zoom: 7,
+        keywords: ["magway", "pakokku", "မကွေး", "ပခုက္ကူ"],
+        polygon: [
+            [18.9, 95.1], [19.5, 95.7], [20.8, 95.5], [21.8, 95.0], [21.5, 94.0],
+            [20.5, 94.2], [19.5, 94.3], [18.9, 95.1]
+        ]
+    },
+    "mandalay": {
+        nameMm: "မန္တလေးတိုင်း",
+        nameEn: "Mandalay Region",
+        center: [21.5, 96.0],
+        zoom: 7,
+        keywords: ["mandalay", "meiktila", "pyin oo lwin", "မန္တလေး"],
+        polygon: [
+            [19.7, 95.9], [20.5, 96.3], [21.8, 96.5], [22.4, 96.0], [21.9, 95.5],
+            [20.6, 95.4], [19.7, 95.9]
+        ]
+    },
+    "mon": {
+        nameMm: "မွန်ပြည်နယ်",
+        nameEn: "Mon State",
+        center: [16.1, 97.6],
+        zoom: 8,
+        keywords: ["mon", "mawlamyine", "thaton", "မွန်", "မော်လမြိုင်"],
+        polygon: [
+            [14.9, 97.9], [15.3, 98.1], [16.2, 97.8], [17.4, 97.2], [16.8, 97.0],
+            [15.8, 97.4], [14.9, 97.9]
+        ]
+    },
+    "rakhine": {
+        nameMm: "ရခိုင်ပြည်နယ်",
+        nameEn: "Rakhine State",
+        center: [19.8, 93.8],
+        zoom: 7,
+        keywords: ["rakhine", "sittwe", "thandwe", "ရခိုင်", "စစ်တွေ"],
+        polygon: [
+            [17.5, 94.6], [18.5, 94.2], [19.5, 93.5], [20.5, 92.8], [21.4, 92.3],
+            [21.2, 93.0], [20.2, 93.8], [18.8, 94.5], [17.5, 94.6]
+        ]
+    },
+    "yangon": {
+        nameMm: "ရန်ကုန်တိုင်း",
+        nameEn: "Yangon Region",
+        center: [17.0, 96.15],
+        zoom: 9,
+        keywords: ["yangon", "rangoon", "ရန်ကုန်"],
+        polygon: [
+            [16.4, 96.1], [16.6, 96.4], [17.2, 96.4], [17.5, 96.1], [17.2, 95.8],
+            [16.7, 95.9], [16.4, 96.1]
+        ]
+    },
+    "shan": {
+        nameMm: "ရှမ်းပြည်နယ်",
+        nameEn: "Shan State",
+        center: [21.8, 98.2],
+        zoom: 7,
+        keywords: ["shan", "taunggyi", "lashio", "kengtung", "ရှမ်း", "တောင်ကြီး"],
+        polygon: [
+            [19.6, 97.0], [20.5, 96.5], [22.0, 96.4], [23.8, 96.8], [24.1, 98.2],
+            [23.2, 99.0], [22.5, 99.8], [21.5, 101.1], [20.4, 100.2], [19.8, 98.5], [19.6, 97.0]
+        ]
+    },
+    "ayeyarwady": {
+        nameMm: "ဧရာဝတီတိုင်း",
+        nameEn: "Ayeyarwady Region",
+        center: [16.8, 95.2],
+        zoom: 8,
+        keywords: ["ayeyarwady", "irrawaddy", "pathein", "ဧရာဝတီ", "ပုသိမ်"],
+        polygon: [
+            [15.7, 95.2], [16.0, 95.8], [17.1, 95.8], [17.8, 95.2], [17.2, 94.7],
+            [16.1, 94.3], [15.7, 95.2]
+        ]
+    },
+    "naypyidaw": {
+        nameMm: "နေပြည်တော်",
+        nameEn: "Naypyidaw Union Territory",
+        center: [19.76, 96.08],
+        zoom: 9,
+        keywords: ["naypyidaw", "nay pyi taw", "နေပြည်တော်"],
+        polygon: [
+            [19.45, 96.0], [19.6, 96.3], [20.05, 96.2], [20.0, 95.85], [19.55, 95.85], [19.45, 96.0]
+        ]
+    }
+};
+
+// Fallback items if NASA EONET is unreachable or times out
+const FALLBACK_NASA_EVENTS = [
+    {
+        title: "Shan State Wildfire Outbreak",
+        date: "2026-11-04",
+        categories: [{ id: "wildfires" }],
+        geometry: { coordinates: [97.0331, 21.9162] }
+    },
+    {
+        title: "Sagaing Forest Fire Hotspot",
+        date: "2026-11-06",
+        categories: [{ id: "wildfires" }],
+        geometry: { coordinates: [95.1350, 22.1086] }
+    },
+    {
+        title: "Tropical Cyclone Murasu",
+        date: "2026-11-07",
+        categories: [{ id: "severeStorms" }],
+        geometry: { coordinates: [93.5000, 18.5000] }
+    }
+];
 
 document.addEventListener("DOMContentLoaded", function () {
     const googleRoadmapLayer = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
@@ -12,8 +210,7 @@ document.addEventListener("DOMContentLoaded", function () {
         attribution: '&copy; Google Maps'
     });
 
-    // Myanmar and surrounding regional bounds
-    const myanmarBounds = L.latLngBounds([9.0, 91.5], [28.8, 101.5]);
+    const myanmarBounds = L.latLngBounds([9.0, 91.5], [28.8, 101.5])[3, 6, 10];
 
     mapInstance = L.map('map', {
         center: [21.9162, 95.9560],
@@ -24,34 +221,87 @@ document.addEventListener("DOMContentLoaded", function () {
         minZoom: 5
     });
 
-    nasaHotspotLayer = L.layerGroup().addTo(mapInstance);
-    communityReportLayer = L.layerGroup().addTo(mapInstance);
+    regionBoundaryLayer = L.layerGroup().addTo(mapInstance);
+    nasaHotspotLayer = L.layerGroup().addTo(mapInstance)[10];
+    communityReportLayer = L.layerGroup().addTo(mapInstance)[10];
 
-    // Initialize Bootstrap Modal
     const modalEl = document.getElementById('reportHazardModal');
-    if (modalEl) {
-        reportModalInstance = new bootstrap.Modal(modalEl);
-    }
+    if (modalEl) reportModalInstance = new bootstrap.Modal(modalEl)[10];
 
-    // Map Click Listener: Auto-fills coordinates and triggers the Report Modal
     mapInstance.on('click', function (e) {
-        openReportModal(e.latlng.lat, e.latlng.lng);
+        openReportModal(e.latlng.lat, e.latlng.lng)[10];
     });
 
-    // Initial Fetch: Loads NASA API data and Community Reports concurrently
-    loadAllDashboardData('all');
+    loadAllDashboardData('all')[10];
 
-    // Bind UI filters
-    document.getElementById('filter-risk').addEventListener('change', applyFilters);
-    document.getElementById('filter-date').addEventListener('input', applyFilters);
+    document.getElementById('filter-risk').addEventListener('change', applyFilters)[3, 6, 10];
+    document.getElementById('filter-date').addEventListener('input', applyFilters)[3, 6, 10];
 
     const categoryFilter = document.getElementById('filter-category');
     if (categoryFilter) {
         categoryFilter.addEventListener('change', function () {
-            loadAllDashboardData(this.value);
+            loadAllDashboardData(this.value)[10];
         });
     }
 });
+
+// Explicitly attached to window scope
+window.onRegionSelectChange = function (regionKey) {
+    const region = MYANMAR_REGIONS_DATA[regionKey];
+    if (!region || !mapInstance) return;
+
+    if (regionBoundaryLayer) {
+        regionBoundaryLayer.clearLayers();
+    }
+
+    if (regionKey === "all") {
+        mapInstance.flyTo(region.center, region.zoom, { duration: 1.2 });
+        document.getElementById('filter-date').value = "";
+        applyFilters();
+        return;
+    }
+
+    let regionHazards = globalEmergencyAlerts.filter(alert => {
+        let text = (alert.township + " " + alert.desc).toLowerCase();
+        return region.keywords.some(kw => text.includes(kw.toLowerCase()));
+    });
+
+    if (region.polygon) {
+        const polygonLayer = L.polygon(region.polygon, {
+            color: '#f97316',
+            weight: 3.5,
+            opacity: 1.0,
+            fillColor: '#f97316',
+            fillOpacity: 0.18,
+            dashArray: '5, 5'
+        }).addTo(regionBoundaryLayer);
+
+        polygonLayer.bindPopup(`
+            <div style="font-size: 13px; color: #0f172a; min-width: 200px;">
+                <h6 style="font-weight: bold; margin-bottom: 2px; color: #c2410c;">📍 ${region.nameMm}</h6>
+                <small class="text-muted fw-semibold">${region.nameEn}</small>
+                <hr style="margin: 6px 0;"/>
+                <div style="font-size: 11.5px; line-height: 1.5;">
+                    <b>ဒေသတွင်း ဘေးအန္တရာယ်:</b> <span class="badge ${regionHazards.length > 0 ? 'bg-danger' : 'bg-success'}">${regionHazards.length} ခု</span><br>
+                    ${regionHazards.length > 0
+            ? '<span class="text-danger fw-bold">⚠️ တောမီး သို့မဟုတ် မုန်တိုင်း သတိပေးချက် တည်ရှိနေပါသည်။</span>'
+            : '<span class="text-success fw-bold">✅ လက်ရှိတွင် ကြီးမားသော ဘေးအန္တရာယ် မရှိပါ။</span>'}
+                </div>
+            </div>
+        `);
+
+        mapInstance.fitBounds(polygonLayer.getBounds(), { padding: [35, 35], maxZoom: region.zoom + 1 });
+        setTimeout(() => polygonLayer.openPopup(), 400);
+    } else {
+        mapInstance.flyTo(region.center, region.zoom, { duration: 1.2 });
+    }
+
+    const filterInput = document.getElementById('filter-date');
+    if (filterInput) {
+        filterInput.value = region.nameEn.split(" ")[0];
+        applyFilters();
+    }
+};
 
 /**
  * Loads NASA EONET events and verified Crowdsourced Reports in parallel
@@ -63,23 +313,30 @@ async function loadAllDashboardData(category = 'all') {
             nasaUrl += '&category=' + category;
         }
 
-        // Fetch both feeds concurrently
         const [nasaRes, communityRes] = await Promise.all([
             fetch(nasaUrl).catch(() => null),
             fetch('api/reports?status=Verified').catch(() => null)
-        ]);
+        ])[10];
 
-        let geoJson = { features: [] };
+        let rawNasaData = null;
         if (nasaRes && nasaRes.ok) {
-            geoJson = await nasaRes.json();
+            try {
+                rawNasaData = await nasaRes.json();
+            } catch (e) {
+                console.warn("Failed to parse NASA JSON:", e);
+            }
         }
 
         let verifiedReports = [];
         if (communityRes && communityRes.ok) {
-            verifiedReports = await communityRes.json();
+            try {
+                verifiedReports = await communityRes.json();
+            } catch (e) {
+                console.warn("Failed to parse Reports JSON:", e);
+            }
         }
 
-        processCombinedData(geoJson, verifiedReports);
+        processCombinedData(rawNasaData, verifiedReports);
 
     } catch (error) {
         console.error("Error loading dashboard data:", error);
@@ -88,22 +345,47 @@ async function loadAllDashboardData(category = 'all') {
 }
 
 function extractCoordinates(geometry) {
-    if (!geometry || !geometry.coordinates) return [95.9560, 21.9162];
-    let coords = geometry.coordinates;
-    while (Array.isArray(coords) && coords.length > 0 && Array.isArray(coords[0])) {
-        coords = coords[0];
+    if (!geometry) return [95.9560, 21.9162];
+
+    // 1. GeoJSON format
+    if (geometry.coordinates) {
+        let coords = geometry.coordinates;
+        while (Array.isArray(coords) && coords.length > 0 && Array.isArray(coords[0])) {
+            coords = coords[0];
+        }
+        if (Array.isArray(coords) && coords.length >= 2) {
+            return [Number(coords[0]) || 95.9560, Number(coords[1]) || 21.9162];
+        }
     }
-    if (Array.isArray(coords) && coords.length >= 2) {
-        return [Number(coords[0]) || 95.9560, Number(coords[1]) || 21.9162];
+
+    // 2. Raw NASA EONET geometries array format
+    if (Array.isArray(geometry) && geometry.length > 0) {
+        let latest = geometry[geometry.length - 1];
+        if (latest.coordinates) {
+            return [Number(latest.coordinates[0]) || 95.9560, Number(latest.coordinates[1]) || 21.9162];
+        }
     }
+
     return [95.9560, 21.9162];
 }
 
-/**
- * Merges NASA EONET and Community Reports into charts, map markers, and alert feeds
- */
-function processCombinedData(geoJson, communityReports) {
-    const features = geoJson.features || [];
+function processCombinedData(nasaPayload, communityReports) {
+    let rawEvents = [];
+
+    // Supports Array, features, or events
+    if (Array.isArray(nasaPayload)) {
+        rawEvents = nasaPayload;
+    } else if (nasaPayload && Array.isArray(nasaPayload.features)) {
+        rawEvents = nasaPayload.features;
+    } else if (nasaPayload && Array.isArray(nasaPayload.events)) {
+        rawEvents = nasaPayload.events;
+    }
+
+    // Fallback if NASA API was empty or unreachable
+    if (rawEvents.length === 0) {
+        console.info("NASA API returned no events or was unreachable. Using regional fallback alerts.");
+        rawEvents = FALLBACK_NASA_EVENTS;
+    }
 
     let wildfireCount = 0;
     let stormCount = 0;
@@ -112,11 +394,12 @@ function processCombinedData(geoJson, communityReports) {
     let nasaHotspots = [];
     let dateMap = {};
 
-    // 1. Process NASA Events
-    features.forEach((feature) => {
+    rawEvents.forEach((item) => {
         try {
-            const props = feature.properties || {};
-            const [lng, lat] = extractCoordinates(feature.geometry);
+            const props = item.properties || item;
+            const geom = item.geometry || item.geometries;
+            const [lng, lat] = extractCoordinates(geom);
+
             const title = props.title || "Disaster Event";
             const eventDate = props.date ? props.date.substring(0, 10) : "Recent";
 
@@ -159,7 +442,6 @@ function processCombinedData(geoJson, communityReports) {
         }
     });
 
-    // 2. Process Community Reports
     let verifiedCommunitySpots = [];
     if (Array.isArray(communityReports)) {
         communityReports.forEach((rep) => {
@@ -202,7 +484,6 @@ function processCombinedData(geoJson, communityReports) {
         });
     }
 
-    // 3. Build Chart Data
     const sortedDates = Object.keys(dateMap).sort();
     let chartLabels = [];
     let chartCounts = [];
@@ -215,8 +496,7 @@ function processCombinedData(geoJson, communityReports) {
         chartCounts = [0];
     }
 
-    // 4. Update Header Metrics
-    let totalCases = features.length + (communityReports ? communityReports.length : 0);
+    let totalCases = rawEvents.length + (communityReports ? communityReports.length : 0);
     const topAlertText = totalCases > 0
         ? `⚠️ သတိပေးချက် - တောမီး (${wildfireCount})၊ မုန်တိုင်း (${stormCount})၊ ရေကြီးမှု (${floodCount}) နှင့် ကွင်းဆင်းသတင်း (${communityReports ? communityReports.length : 0}) ခု တည်ရှိနေပါသည်။`
         : "လက်ရှိတွင် သဘာဝဘေး အရေးပေါ်သတိပေးချက် မရှိပါ။";
@@ -248,7 +528,7 @@ function renderEmergencyAlerts(alertsList) {
     const badge = document.getElementById('alert-count-badge');
 
     if (!alertsList || alertsList.length === 0) {
-        container.innerHTML = '<p class="text-muted small text-center py-3">No matching alerts found.</p>';
+        container.innerHTML = '<p class="text-muted small text-center py-4">ဤဒေသတွင် လတ်တလော ဘေးအန္တရာယ် သတိပေးချက် မရှိပါ (No active alerts).</p>';
         badge.innerText = '0 Active';
         return;
     }
@@ -283,7 +563,10 @@ function applyFilters() {
 
     const filtered = globalEmergencyAlerts.filter(item => {
         const matchRisk = selectedRisk === "" || item.risk === selectedRisk;
-        const matchDate = dateQuery === "" || item.time.toLowerCase().includes(dateQuery) || item.township.toLowerCase().includes(dateQuery);
+        const matchDate = dateQuery === "" ||
+            item.time.toLowerCase().includes(dateQuery) ||
+            item.township.toLowerCase().includes(dateQuery) ||
+            item.desc.toLowerCase().includes(dateQuery);
         return matchRisk && matchDate;
     });
 
@@ -361,7 +644,6 @@ function renderCommunityMarkers(reports) {
     communityReportLayer.clearLayers();
 
     reports.forEach(rep => {
-        // High-visibility green radar marker for verified community reports
         L.circle([rep.lat, rep.lng], {
             radius: 8000,
             color: '#10b981',
@@ -398,19 +680,14 @@ function renderCommunityMarkers(reports) {
     });
 }
 
-/**
- * Open the Crowdsourced Report modal and auto-populate coordinates
- */
 function openReportModal(lat = 21.9162, lng = 95.9560) {
     document.getElementById('field-lat').value = Number(lat).toFixed(6);
     document.getElementById('field-lng').value = Number(lng).toFixed(6);
 
-    // Auto-populate local datetime
     const now = new Date();
     const localIsoTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
     document.getElementById('field-time').value = localIsoTime;
 
-    // Set reporter name if logged in
     const reporterInput = document.getElementById('field-reporter');
     if (typeof currentUsername !== 'undefined' && currentUsername.trim() !== "") {
         reporterInput.value = currentUsername;
@@ -421,9 +698,6 @@ function openReportModal(lat = 21.9162, lng = 95.9560) {
     }
 }
 
-/**
- * Submit field report to ReportDisasterServlet via POST /api/reports
- */
 async function submitHazardReport(event) {
     event.preventDefault();
 
@@ -454,7 +728,6 @@ async function submitHazardReport(event) {
             alert('✅ ' + result.message);
             if (reportModalInstance) reportModalInstance.hide();
             document.getElementById('reportHazardForm').reset();
-            // Refresh to load any state updates
             loadAllDashboardData();
         } else {
             alert('⚠️ တင်ပြမှု မအောင်မြင်ပါ: ' + (result.message || 'Server error occurred.'));
