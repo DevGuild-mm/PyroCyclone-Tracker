@@ -471,29 +471,31 @@
             loadReports(status);
         }
 
-        async function loadReports(status) {
-            var tbody = document.getElementById('reports-tbody');
-            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-sub py-5"><span class="spinner-border spinner-border-sm me-2"></span>Loading records...</td></tr>';
+       async function loadReports(status) {
+           var tbody = document.getElementById('reports-tbody');
+           tbody.innerHTML = '<tr><td colspan="9" class="text-center text-sub py-5"><span class="spinner-border spinner-border-sm me-2"></span>Loading records...</td></tr>';
 
-            try {
-                var res = await fetch('/admin/reports?status=' + encodeURIComponent(status));
-                if (!res.ok) throw new Error('Status code: ' + res.status);
-                var reports = await res.json();
-                cachedReports = reports;
+           try {
+               // JSP ရဲ့ contextPath ကို တိုက်ရိုက်ယူသုံးခြင်း
+               var contextPath = '<%= request.getContextPath() %>';
+               var res = await fetch(contextPath + '/admin/reports?status=' + encodeURIComponent(status));
+               if (!res.ok) throw new Error('Status code: ' + res.status);
+               var reports = await res.json();
+               cachedReports = reports;
 
-                // Sync KPI metrics
-                fetch('/admin/reports?status=all')
-                    .then(function(r) { return r.json(); })
-                    .then(function(allData) { updateKpis(allData); })
-                    .catch(function(e) { console.warn('KPI sync error', e); });
+               // Sync KPI metrics
+               fetch(contextPath + '/admin/reports?status=all')
+                   .then(function(r) { return r.json(); })
+                   .then(function(allData) { updateKpis(allData); })
+                   .catch(function(e) { console.warn('KPI sync error', e); });
 
-                renderTableRows(cachedReports);
+               renderTableRows(cachedReports);
 
-            } catch (err) {
-                console.error(err);
-                tbody.innerHTML = '<tr><td colspan="9" class="text-center text-danger py-5 fw-bold">⚠️ ဆာဗာ သို့မဟုတ် ဒေတာဘေ့စ် ချိတ်ဆက်မှု အမှားရှိပါသည် (Failed to load reports).</td></tr>';
-            }
-        }
+           } catch (err) {
+               console.error(err);
+               tbody.innerHTML = '<tr><td colspan="9" class="text-center text-danger py-5 fw-bold">⚠️ ဆာဗာ သို့မဟုတ် ဒေတာဘေ့စ် ချိတ်ဆက်မှု အမှားရှိပါသည် (Failed to load reports).</td></tr>';
+           }
+       }
 
         function updateKpis(allList) {
             if (!Array.isArray(allList)) return;
@@ -574,28 +576,28 @@
             tbody.innerHTML = rows;
         }
 
-        async function updateReportStatus(reportId, action) {
-            var formData = new URLSearchParams();
-            formData.append('id', reportId);
-            formData.append('action', action);
+       async function updateReportStatus(reportId, action) {
+           var formData = new URLSearchParams();
+           formData.append('id', reportId);
+           formData.append('action', action);
 
-            try {
-                var res = await fetch('/admin/reports', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: formData.toString()
-                });
-                var data = await res.json();
-                if (res.ok && data.success) {
-                    loadReports(currentFilterStatus);
-                } else {
-                    alert('Update failed: ' + (data.message || 'Server error'));
-                }
-            } catch (err) {
-                alert('Connection error occurred.');
-            }
-        }
-
+           try {
+               var contextPath = '<%= request.getContextPath() %>';
+               var res = await fetch(contextPath + '/admin/reports', {
+                   method: 'POST',
+                   headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                   body: formData.toString()
+               });
+               var data = await res.json();
+               if (res.ok && data.success) {
+                   loadReports(currentFilterStatus);
+               } else {
+                   alert('Update failed: ' + (data.message || 'Server error'));
+               }
+           } catch (err) {
+               alert('Connection error occurred.');
+           }
+       }
         function escapeHtml(text) {
             if (!text) return '';
             return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");

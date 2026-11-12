@@ -101,11 +101,17 @@
         .role-admin { background: #0284c7; color: #ffffff; }
         .role-user { background: #334155; color: #e2e8f0; }
 
-        .subnav-marquee-banner {
-            background: linear-gradient(90deg, #18090b 0%, #2d0d0f 50%, #18090b 100%);
-            border-bottom: 1px solid rgba(239, 68, 68, 0.35);
-            padding: 7px 0; font-size: 13px; font-weight: 600; color: #ffffff;
-        }
+       .subnav-marquee-banner {
+                   background: linear-gradient(90deg, #18090b 0%, #2d0d0f 50%, #18090b 100%);
+                   border-bottom: 1px solid rgba(239, 68, 68, 0.35);
+                   padding: 7px 0;
+                   font-size: 13px;
+                   font-weight: 600;
+                   color: #ffffff;
+                   position:sticky;
+                   top: 58px; /* Navbar ရဲ့ အမြင့်အောက်မှာ ကပ်နေစေရန် */
+                   z-index: 1019; /* Navbar အောက်နောက်ခံမရောက်အောင် ထိန်းပေးရန် */
+               }
         .marquee-tag {
             background: #991b1b; color: #ffffff; font-size: 11px; font-weight: 700;
             padding: 2px 10px; border-radius: 6px; margin-right: 14px; white-space: nowrap;
@@ -196,64 +202,68 @@
     </script>
 
     <!-- Top Navigation -->
-    <nav class="navbar navbar-expand-xl navbar-command sticky-top shadow-sm">
-        <div class="container-fluid px-2 px-md-3">
-            <a class="navbar-brand d-flex align-items-center gap-2 text-white fw-bold me-2 me-lg-3" href="index.jsp">
-                <div class="brand-logo-box"><i class="fa-solid fa-fire-flame-curved"></i></div>
-                <div>
-                    <div style="line-height: 1.1; font-size: 14px;">MYANMAR DISASTER COMMAND</div>
-                    <small class="text-warning fw-semibold" style="font-size: 10px;">Wildfire & Cyclone Early Warning</small>
-                </div>
-            </a>
-
-            <button class="navbar-toggler border-secondary bg-dark text-white ms-auto me-2" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCommandContent" aria-controls="navbarCommandContent" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-
-            <div class="collapse navbar-collapse justify-content-between align-items-center" id="navbarCommandContent">
-                <div class="d-flex align-items-center gap-2 my-2 my-xl-0">
-                    <a href="index.jsp" class="nav-switch-link active"><i class="fa-solid fa-map-location-dot me-1.5"></i> Live Map</a>
-                    <% if (isAdmin) { %>
-                        <a href="admin.jsp" class="nav-switch-link"><i class="fa-solid fa-shield-halved me-1.5"></i> Moderation Console</a>
-                    <% } %>
-                </div>
-
-                <div class="d-flex flex-wrap align-items-center gap-2.5 my-2 my-xl-0">
-                    <button type="button" class="btn btn-warning btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-sm d-flex align-items-center gap-1.5" onclick="openReportModal()">
-                        <i class="fa-solid fa-bullhorn"></i> <span>သတင်းပို့မည် (Report)</span>
-                    </button>
-                    <div class="pulse-badge"><span class="pulse-dot"></span> LIVE SENSORS</div>
-
-                    <% if (loggedIn) { %>
-                        <div class="user-identity-box">
-                            <i class="fa-solid <%= isAdmin ? "fa-user-shield text-info" : "fa-user text-warning" %> ms-1"></i>
-                            <span class="fw-semibold text-white"><%= username %></span>
-                            <span class="role-badge <%= isAdmin ? "role-admin" : "role-user" %>"><%= sessionUser.getRole().toUpperCase() %></span>
+    <!-- Sticky Wrapper for Navbar & Marquee Banner -->
+        <div class="sticky-top shadow-sm">
+            <!-- Top Navigation -->
+            <nav class="navbar navbar-expand-xl navbar-command">
+                <div class="container-fluid px-2 px-md-3">
+                    <a class="navbar-brand d-flex align-items-center gap-2 text-white fw-bold me-2 me-lg-3" href="index.jsp">
+                        <div class="brand-logo-box"><i class="fa-solid fa-fire-flame-curved"></i></div>
+                        <div>
+                            <div style="line-height: 1.1; font-size: 14px;">MYANMAR DISASTER COMMAND</div>
+                            <small class="text-warning fw-semibold" style="font-size: 10px;">Wildfire & Cyclone Early Warning</small>
                         </div>
-                        <a href="logout" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1 fw-bold shadow-none">
-                            <i class="fa-solid fa-right-from-bracket me-1"></i> Logout
-                        </a>
-                    <% } else { %>
-                        <a href="login.jsp" class="btn btn-outline-warning btn-sm rounded-pill px-3.5 py-1.5 fw-bold shadow-none">
-                            <i class="fa-solid fa-right-to-bracket me-1.5"></i> Login
-                        </a>
-                    <% } %>
-                </div>
-            </div>
-        </div>
-    </nav>
+                    </a>
 
-    <!-- Subnav Marquee -->
-    <div class="subnav-marquee-banner shadow-sm">
-        <div class="container-fluid d-flex align-items-center px-4">
-            <span class="marquee-tag"><i class="fa-solid fa-satellite-dish me-1"></i> LIVE TELEMETRY</span>
-            <div class="overflow-hidden flex-grow-1">
-                <div id="marquee-content" class="marquee-content">
-                    <span>မြန်မာနိုင်ငံ သဘာဝဘေး အချက်အလက်များကို ရှာဖွေနေသည်...</span>
+                    <button class="navbar-toggler border-secondary bg-dark text-white ms-auto me-2" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCommandContent" aria-controls="navbarCommandContent" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+
+                    <div class="collapse navbar-collapse justify-content-between align-items-center" id="navbarCommandContent">
+                        <div class="d-flex align-items-center gap-2 my-2 my-xl-0">
+                            <a href="index.jsp" class="nav-switch-link active"><i class="fa-solid fa-map-location-dot me-1.5"></i> Live Map</a>
+                            <% if (isAdmin) { %>
+                                <a href="admin.jsp" class="nav-switch-link"><i class="fa-solid fa-shield-halved me-1.5"></i> Moderation Console</a>
+                            <% } %>
+                        </div>
+
+                        <div class="d-flex flex-wrap align-items-center gap-2.5 my-2 my-xl-0">
+                            <button type="button" class="btn btn-warning btn-sm rounded-pill px-3 py-1.5 fw-bold shadow-sm d-flex align-items-center gap-1.5" onclick="openReportModal()">
+                                <i class="fa-solid fa-bullhorn"></i> <span>သတင်းပို့မည် (Report)</span>
+                            </button>
+                            <div class="pulse-badge"><span class="pulse-dot"></span> LIVE SENSORS</div>
+
+                            <% if (loggedIn) { %>
+                                <div class="user-identity-box">
+                                    <i class="fa-solid <%= isAdmin ? "fa-user-shield text-info" : "fa-user text-warning" %> ms-1"></i>
+                                    <span class="fw-semibold text-white"><%= username %></span>
+                                    <span class="role-badge <%= isAdmin ? "role-admin" : "role-user" %>"><%= sessionUser.getRole().toUpperCase() %></span>
+                                </div>
+                                <a href="logout" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1 fw-bold shadow-none">
+                                    <i class="fa-solid fa-right-from-bracket me-1"></i> Logout
+                                </a>
+                            <% } else { %>
+                                <a href="login.jsp" class="btn btn-outline-warning btn-sm rounded-pill px-3.5 py-1.5 fw-bold shadow-none">
+                                    <i class="fa-solid fa-right-to-bracket me-1.5"></i> Login
+                                </a>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Subnav Marquee (Attached directly under navbar) -->
+            <div class="subnav-marquee-banner">
+                <div class="container-fluid d-flex align-items-center px-4">
+                    <span class="marquee-tag"><i class="fa-solid fa-satellite-dish me-1"></i> LIVE TELEMETRY</span>
+                    <div class="overflow-hidden flex-grow-1">
+                        <div id="marquee-content" class="marquee-content">
+                            <span>မြန်မာနိုင်ငံ သဘာဝဘေး အချက်အလက်များကို ရှာဖွေနေသည်...</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
     <!-- Main Container -->
     <div class="container-fluid py-4 px-4">

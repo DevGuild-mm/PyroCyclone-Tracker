@@ -16,9 +16,9 @@ public class DbConnection {
                 Class.forName("com.mysql.jdbc.Driver");
             }
             connection = DriverManager.getConnection(
-                    "jdbc:mysql://localhost:3306/PyroCyclone?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
-                    "root",
-                    "Root@123456!"
+                    "jdbc:mysql://localhost:3306/your_database_name",
+                    "your_username",
+                    "your_password"
             );
         } catch (ClassNotFoundException | SQLException e) {
             e.printStackTrace();
