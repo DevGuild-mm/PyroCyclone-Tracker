@@ -25,8 +25,8 @@ PyroCyclone Tracker is a web application designed to help users view disaster-re
 
 ## Project Contributors
 
-- **Frontend:** [Your Name] — frontend development and dashboard interface
-- **Backend:** **Ko Aung** — backend development and server-side functionality
+- **Frontend:** **Kyaw Nyein Chan htwe** — frontend development and dashboard interface
+- **Backend:** **Lwin Ko Ko Aung** — backend development and server-side functionality
 
 ## Getting Started
 
